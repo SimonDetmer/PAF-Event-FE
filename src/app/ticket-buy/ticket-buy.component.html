@@ -1,0 +1,37 @@
+<h2>Ticket-Bestellung</h2>
+
+<div *ngIf="selectedEvents && selectedEvents.length > 0; else noSelection">
+  <div *ngFor="let event of selectedEvents">
+    <h3>{{ event.title }}</h3>
+    <p>Ort: {{ event.location?.street }}</p>
+    <p>Datum & Uhrzeit: {{ event.eventDateTime | date:'dd.MM.yyyy HH:mm' }}</p>
+    <p>
+      Ticket Preis: {{ event.tickets[0]?.price ? event.tickets[0].price : 'Nicht verfügbar' }}
+    </p>
+    <!-- Dropdown zur Auswahl der Ticketanzahl (1 bis 100) -->
+    <label for="ticketCount{{ event.id }}">Ticket Anzahl:</label>
+    <select [(ngModel)]="selectedTicketCounts[event.id]" name="ticketCount{{ event.id }}">
+      <option *ngFor="let num of ticketNumbers" [value]="num">{{ num }}</option>
+    </select>
+    <hr>
+  </div>
+
+  <h3>Ihre Daten</h3>
+  <form [formGroup]="userForm" (ngSubmit)="orderTickets()">
+    <label for="email">E-Mail:</label>
+    <input id="email" type="email" formControlName="email">
+    <div *ngIf="userForm.get('email')?.invalid && (userForm.get('email')?.touched || userForm.get('email')?.dirty)" class="error">
+      <span *ngIf="userForm.get('email')?.errors?.['required']">E-Mail-Adresse ist erforderlich.</span>
+      <span *ngIf="userForm.get('email')?.errors?.['email']">Bitte eine gültige E-Mail-Adresse eingeben.</span>
+      <span *ngIf="userForm.get('email')?.errors?.['emailTaken']">
+        Diese E-Mail-Adresse wird bereits verwendet. Daher wird diese Order dem entsprechenden User zugeordnet.
+      </span>
+    </div>
+
+    <button type="submit">Jetzt bestellen</button>
+  </form>
+</div>
+
+<ng-template #noSelection>
+  <p>Keine Events ausgewählt.</p>
+</ng-template>

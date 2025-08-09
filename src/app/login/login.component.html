@@ -1,0 +1,15 @@
+<div class="login-container">
+  <h2>Login</h2>
+  <p>Bitte wählen Sie Ihre Rolle:</p>
+
+  <div class="role-selection">
+    <label>
+      <input type="radio" name="role" value="eventmanager" [(ngModel)]="selectedRole"> Eventmanager
+    </label>
+    <label>
+      <input type="radio" name="role" value="customer" [(ngModel)]="selectedRole"> Customer
+    </label>
+  </div>
+
+  <button (click)="submitRole()">Weiter</button>
+</div>

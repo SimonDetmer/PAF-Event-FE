@@ -1,0 +1,29 @@
+<div class="dashboard-layout">
+  <!-- Obere Reihe mit kleineren Diagrammen -->
+  <div class="small-charts-row">
+    <div class="widget-item">
+      <h3>Ticket Sales Over Time</h3>
+      <div echarts [options]="chartOption1" class="chart" id="line-chart"></div>
+    </div>
+    <div class="widget-item">
+      <h3>Ticket Sales Per Event</h3>
+      <div echarts [options]="chartOption2" class="chart" id="bar-chart"></div>
+    </div>
+    <div class="widget-item">
+      <h3>Event Revenue Distribution</h3>
+      <div echarts [options]="chartOption3" class="chart" id="pie-chart"></div>
+    </div>
+    <div class="widget-item">
+      <h3>Location Occupancy</h3>
+      <div echarts [options]="chartOption5" class="chart" id="occupancy-chart"></div>
+    </div>
+  </div>
+  
+  <!-- Untere Reihe mit Heatmap über volle Breite -->
+  <div class="heatmap-row">
+    <div class="widget-item heatmap-container">
+      <h3>Booking Heatmap</h3>
+      <div echarts [options]="chartOption4" class="chart heatmap-chart" id="heatmap-chart"></div>
+    </div>
+  </div>
+</div>

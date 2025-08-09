@@ -1,0 +1,211 @@
+<h2>Event Overview</h2>
+<p>Willkommen! Sie sind angemeldet als: <strong>{{ userRole }}</strong></p>
+
+<!-- Formularbereich nur für Eventmanager -->
+<div *ngIf="userRole === 'eventmanager'">
+  <h3>Neues Event erstellen</h3>
+  <form (ngSubmit)="createEvent()">
+    <label for="title">Titel:</label>
+    <input
+      id="title"
+      type="text"
+      [(ngModel)]="newEvent.title"
+      name="title"
+      required
+      pattern=".*\S.*"
+      #titleCtrl="ngModel">
+
+    <!-- Fehleranzeige für den Titel -->
+    <div *ngIf="titleCtrl.invalid && titleCtrl.touched" class="error">
+      <span *ngIf="titleCtrl.errors?.['required']">Der Titel ist erforderlich.</span>
+      <span *ngIf="titleCtrl.errors?.['pattern']">Der Titel darf nicht nur aus Leerzeichen bestehen.</span>
+    </div>
+
+    <label for="location">Ort wählen:</label>
+    <select id="location" [(ngModel)]="newEvent.locationId" name="locationId" required>
+      <option *ngFor="let loc of locations" [value]="loc.id">
+        {{ loc.street }}
+      </option>
+    </select>
+
+    <label for="eventDateTime">Datum &amp; Uhrzeit:</label>
+    <input
+      id="eventDateTime"
+      type="datetime-local"
+      [(ngModel)]="newEvent.eventDateTime"
+      name="eventDateTime"
+      required
+      #eventDateTimeCtrl="ngModel">
+
+    <!-- Fehleranzeige für eventDateTime -->
+    <div *ngIf="eventDateTimeCtrl.invalid && eventDateTimeCtrl.touched" class="error">
+      <span *ngIf="eventDateTimeCtrl.errors?.['required']">Datum und Uhrzeit sind erforderlich.</span>
+    </div>
+
+    <button type="submit">Event hinzufügen</button>
+  </form>
+
+  <h3>Neue Location hinzufügen</h3>
+  <form (ngSubmit)="createLocation()">
+    <label for="street">Straße:</label>
+    <input
+      id="street"
+      type="text"
+      [(ngModel)]="newLocation.street"
+      name="street"
+      required
+      pattern=".*\S.*"
+      #streetCtrl="ngModel">
+
+    <!-- Fehleranzeige für Straße -->
+    <div *ngIf="streetCtrl.invalid && streetCtrl.touched" class="error">
+      <span *ngIf="streetCtrl.errors?.['required']">Die Straße ist erforderlich.</span>
+      <span *ngIf="streetCtrl.errors?.['pattern']">Die Straße darf nicht nur aus Leerzeichen bestehen.</span>
+    </div>
+
+    <label for="geoX">Geo-Koordinate X:</label>
+    <input
+      id="geoX"
+      type="number"
+      [(ngModel)]="newLocation.geoX"
+      name="geoX"
+      step="0.0001"
+      min="-180"
+      max="180"
+      required
+      pattern="^-?(180(\.0{1,4})?|[0-9]{1,2}(\.\d{1,4})?)$"
+      #geoXCtrl="ngModel">
+
+    <label for="capacity">Kapazität:</label>
+    <input
+      id="capacity"
+      type="text"
+      [(ngModel)]="newLocation.capacity"
+      name="capacity"
+      required
+      >
+    <!-- Fehleranzeige mit korrektem Zugriff -->
+    <div *ngIf="geoXCtrl.invalid && geoXCtrl.touched" class="error">
+      <span *ngIf="geoXCtrl.errors?.['required']">Dieses Feld ist erforderlich.</span>
+      <span *ngIf="geoXCtrl.errors?.['min'] || geoXCtrl.errors?.['max']">
+    Der Wert muss zwischen -180 und 180 liegen.
+  </span>
+      <span *ngIf="geoXCtrl.errors?.['pattern']">
+    Bitte eine gültige Zahl mit maximal vier Nachkommastellen eingeben.
+  </span>
+    </div>
+
+
+    <label for="geoY">Geo-Koordinate Y:</label>
+    <input
+      id="geoY"
+      type="number"
+      [(ngModel)]="newLocation.geoY"
+      name="geoY"
+      step="0.0001"
+      min="-90"
+      max="90"
+      required
+      pattern="^-?(90(\.0{1,4})?|[0-9]{1,2}(\.\d{1,4})?)$"
+      #geoYCtrl="ngModel">
+
+    <!-- Fehleranzeige für geoY -->
+    <div *ngIf="geoYCtrl.invalid && geoYCtrl.touched" class="error">
+      <span *ngIf="geoYCtrl.errors?.['required']">Dieses Feld ist erforderlich.</span>
+      <span *ngIf="geoYCtrl.errors?.['min'] || geoYCtrl.errors?.['max']">
+    Der Wert muss zwischen -90 und 90 liegen.
+  </span>
+      <span *ngIf="geoYCtrl.errors?.['pattern']">
+    Bitte eine gültige Zahl mit maximal vier Nachkommastellen eingeben.
+  </span>
+    </div>
+
+    <button type="submit">Location hinzufügen</button>
+  </form>
+
+  <h3>Neues Ticket erstellen</h3>
+  <form (ngSubmit)="createTicket()">
+    <label for="ticketEvent">Event auswählen:</label>
+    <select id="ticketEvent" [(ngModel)]="newTicket.eventId" name="eventId" required>
+      <option *ngFor="let event of data" [value]="event.id">
+        {{ event.title }}
+      </option>
+    </select>
+
+    <label for="ticketPrice">Ticket Preis:</label>
+    <input
+      id="ticketPrice"
+      type="number"
+      [(ngModel)]="newTicket.price"
+      name="price"
+      required
+      step="0.01"
+      min="0"
+      pattern="^\d{1,10}(\.\d{1,2})?$"
+      #ticketPriceCtrl="ngModel">
+
+    <!-- Fehleranzeige für Ticket Price -->
+    <div *ngIf="ticketPriceCtrl.invalid && ticketPriceCtrl.touched" class="error">
+      <span *ngIf="ticketPriceCtrl.errors?.['required']">Bitte geben Sie einen Preis ein.</span>
+      <span *ngIf="ticketPriceCtrl.errors?.['min']">Der Preis muss 0 oder höher sein.</span>
+      <span *ngIf="ticketPriceCtrl.errors?.['pattern']">
+    Der Preis darf maximal 10 Stellen vor dem Komma und höchstens 2 Nachkommastellen haben.
+  </span>
+    </div>
+
+
+    <button type="submit">Ticket erstellen</button>
+  </form>
+</div>
+
+<!-- Für Kunden: Events mit Auswahl-Checkboxen -->
+<h3>Event-Liste</h3>
+<div *ngIf="data && data.length > 0; else loading">
+  <ul>
+    <li *ngFor="let item of data">
+      <!-- Checkbox, um das Event auszuwählen -->
+      <input [disabled]="(item?.availableTickets  < 0)" type="checkbox" (change)="toggleEventSelection(item.id, getChecked($event))">
+      {{ item.title }} - {{ item.location?.street }} - {{ item?.eventDateTime | date:'dd.MM.yyyy HH:mm' }}
+      <span>
+        - Ticket Preis: {{ item.tickets[0].price }} - Kapazität: {{item.location?.capacity}} - Verfügbare Tickets: {{ item?.availableTickets > 0 ? item?.availableTickets : 'Keine Tickets mehr verfügbar' }}
+
+      </span>
+      <button *ngIf="userRole === 'eventmanager'" (click)="deleteEvent(item.id)">Event löschen</button>
+    </li>
+  </ul>
+  <!-- Button, um zur TicketBuy-Komponente zu navigieren -->
+  <button (click)="orderTickets()">Ticket bestellen</button>
+</div>
+
+<!-- Für Eventmanager: Zusätzliche Listen -->
+<div *ngIf="userRole === 'eventmanager'">
+  <h3>Location-Liste</h3>
+  <div *ngIf="locations && locations.length > 0; else loading">
+    <ul>
+      <li *ngFor="let loc of locations">
+        {{ loc.street }} ({{ loc.geoX }}, {{ loc.geoY }}, Kapaziät: {{loc.capacity}})
+        <button (click)="deleteLocation(loc.id)">Ticket löschen</button>
+      </li>
+    </ul>
+  </div>
+
+  <h3>Ticket-Liste (nur verfügbare Tickets)</h3>
+  <div *ngIf="tickets && tickets.length > 0; else loading">
+    <ul>
+      <li *ngFor="let ticket of tickets">
+        Ticket ID: {{ ticket.id }} - Preis: {{ ticket.price }}
+        <span>
+        - Event: {{ getEventTitle(ticket) }}
+      </span>
+        <button (click)="deleteTicket(ticket.id)">Ticket löschen</button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Button, um zur TicketBuy-Komponente zu navigieren -->
+
+</div>
+<button (click)="showDashboard()">Dashboard</button>
+<ng-template #loading>
+  <p>Lade Daten...</p>
+</ng-template>

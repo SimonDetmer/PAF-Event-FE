@@ -1,0 +1,87 @@
+<!-- Eventmanager-Ansicht -->
+<div *ngIf="userRole === 'eventmanager'; else customerView">
+  <h2>Dashboard - Eventmanager</h2>
+
+  <table border="1" cellspacing="0" cellpadding="4">
+    <thead>
+    <tr>
+      <th>Event ID</th>
+      <th>Titel</th>
+      <th>Datum / Uhrzeit</th>
+      <th>Anzahl verkaufte Tickets</th>
+      <th>Ticket Preis (€)</th>
+      <th>Gesamt (€)</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let event of sortedEvents">
+      <td>{{ event.id }}</td>
+      <td>{{ event.title }}</td>
+      <td>{{ event.eventDateTime | date:'dd.MM.yyyy HH:mm' }}</td>
+      <!-- Speichere das Ergebnis von getSoldTicketsForEvent(event) in "soldTickets" -->
+      <ng-container *ngIf="getSoldTicketsForEvent(event) as soldTickets">
+        <td>{{ soldTickets.length }}</td>
+        <td>{{ soldTickets.length > 0 ? soldTickets[0].price : '-' }}</td>
+        <td>
+          {{ soldTickets.length > 0 ? soldTickets[0].price * soldTickets.length : '-' }}
+        </td>
+      </ng-container>
+    </tr>
+    </tbody>
+  </table>
+
+  <app-report></app-report>
+
+  <h3>Gesamtsumme aller verkauften Tickets: {{ getOverallTotal() }} €</h3>
+</div>
+
+<!-- Customer-Ansicht -->
+<ng-template #customerView>
+  <div>
+    <h2>Kundendashboard</h2>
+
+    <!-- Formular: Nur E-Mail eingeben -->
+    <form (ngSubmit)="loadCustomerData()">
+      <label for="customerEmail">E-Mail:</label>
+      <input type="email" id="customerEmail" [(ngModel)]="customerForm.email" name="email" required>
+      <br>
+      <button type="submit">Daten laden</button>
+    </form>
+
+    <!-- Fehlermeldung -->
+    <div *ngIf="errorMessage">
+      <p style="color:red;">{{ errorMessage }}</p>
+    </div>
+
+    <!-- Anzeige, falls ein Kunde gefunden wurde -->
+    <div *ngIf="customerUser">
+      <h3>Willkommen, {{ customerUser.email }}!</h3>
+      <h4>Ihre Ticketkäufe:</h4>
+
+      <table border="1" cellspacing="0" cellpadding="4">
+        <thead>
+        <tr>
+          <th>Event ID</th>
+          <th>Titel</th>
+          <th>Datum / Uhrzeit</th>
+          <th>Anzahl gekaufte Tickets</th>
+          <th>Ticket Preis (€)</th>
+          <th>Gesamt (€)</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let item of customerEvents">
+          <td>{{ item.event.id }}</td>
+          <td>{{ item.event.title }}</td>
+          <td>{{ item.event.eventDateTime | date:'dd.MM.yyyy HH:mm' }}</td>
+          <td>{{ item.count }}</td>
+          <td>{{ item.count > 0 ? (item.total / item.count) : '-' }}</td>
+          <td>{{ item.total }}</td>
+        </tr>
+        </tbody>
+      </table>
+
+      <h3>Gesamtsumme Ihrer Ticketkäufe: {{ getCustomerOverallTotal() }} €</h3>
+    </div>
+  </div>
+</ng-template>

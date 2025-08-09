@@ -1,0 +1,137 @@
+.demo-chart {
+  height: 400px;
+}
+
+/* Haupt-Dashboard-Layout */
+.dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  padding: 20px;
+}
+
+/* Würfel-Layout für kleinere Diagramme (2x2) */
+.small-charts-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 25px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Untere Reihe mit Heatmap */
+.heatmap-row {
+  width: 100%;
+}
+
+/* Stil für die einzelnen Chart-Container */
+.widget-item {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+/* Hover-Effekt für Karten */
+.widget-item:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Überschriften für die Diagramme */
+.widget-item h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+  font-weight: 600;
+  font-size: 18px;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 10px;
+}
+
+/* Größe für kleine Diagramme */
+.small-charts-row .chart {
+  height: 280px;
+  width: 100%;
+  flex-grow: 1;
+}
+
+/* Würfel-Effekt für die Diagramm-Container */
+.small-charts-row .widget-item {
+  min-height: 350px;
+  perspective: 1000px;
+  transition: transform 0.5s ease;
+  transform-style: preserve-3d;
+  position: relative;
+  border: 1px solid #eaeaea;
+}
+
+.small-charts-row .widget-item:hover {
+  transform: rotateX(5deg) rotateY(5deg);
+  box-shadow: 0 15px 20px rgba(0, 0, 0, 0.1);
+  border-color: #d0d0d0;
+}
+
+/* Leichter Schatten für 3D-Effekt */
+.small-charts-row .widget-item::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  border-radius: 12px;
+}
+
+.small-charts-row .widget-item:hover::after {
+  opacity: 1;
+}
+
+/* Spezielle Stile für die Heatmap */
+.heatmap-container {
+  min-height: 500px;
+  margin-bottom: 40px;
+}
+
+.heatmap-chart {
+  height: 450px !important;
+  min-height: 450px;
+  width: 100%;
+}
+
+/* Responsive Anpassungen */
+@media (max-width: 900px) {
+  .small-charts-row {
+    grid-template-columns: 1fr; /* Einzelne Spalte auf kleineren Bildschirmen */
+    grid-template-rows: auto;
+  }
+  
+  .heatmap-chart {
+    min-height: 400px;
+    height: 400px !important;
+  }
+  
+  .heatmap-container {
+    min-height: 450px;
+  }
+  
+  .small-charts-row .widget-item {
+    min-height: 300px;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1200px) {
+  .small-charts-row {
+    grid-template-columns: repeat(2, 1fr); /* Würfelform auf mittleren Bildschirmen */
+    max-width: 900px;
+  }
+}
