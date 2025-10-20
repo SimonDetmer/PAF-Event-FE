@@ -1,9 +1,17 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { API_BASE_URL } from '../api.config';
+import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule, NgForOf, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatListModule } from '@angular/material/list';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 interface Ticket {
   id: number;
@@ -21,7 +29,7 @@ interface AppEvent {
 @Component({
   selector: 'app-event-overview',
   standalone: true,
-  imports: [NgIf, NgForOf, FormsModule, CommonModule],
+  imports: [NgIf, NgForOf, FormsModule, CommonModule, MatCardModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule, MatListModule, MatCheckboxModule],
   templateUrl: './event-overview.component.html',
   styleUrls: ['./event-overview.component.css']
 })
@@ -42,7 +50,8 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   constructor(
     private http: HttpClient,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    @Inject(API_BASE_URL) private readonly apiBase: string,
   ) {}
 
   ngOnInit(): void {
@@ -60,7 +69,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   }
 
   fetchData(): void {
-    this.http.get<any[]>('http://localhost:8080/events').subscribe({
+    this.http.get<any[]>(`${this.apiBase}/events`).subscribe({
       next: response => {
         this.rawEvents = response;
         const now = new Date();
@@ -73,14 +82,14 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   }
 
   fetchLocations(): void {
-    this.http.get<any[]>('http://localhost:8080/locations').subscribe({
+    this.http.get<any[]>(`${this.apiBase}/locations`).subscribe({
       next: response => this.locations = response,
       error: error => console.error('Fehler beim Abrufen der Locations:', error)
     });
   }
 
   fetchTickets(): void {
-    this.http.get<any[]>('http://localhost:8080/tickets').subscribe({
+    this.http.get<any[]>(`${this.apiBase}/tickets`).subscribe({
       next: response => {
         this.tickets = response;
         if (this.userRole !== 'eventmanager') {
@@ -132,7 +141,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
       location: { id: this.newEvent.locationId },
       eventDateTime: this.newEvent.eventDateTime
     };
-    this.http.post('http://localhost:8080/events', eventData).subscribe({
+    this.http.post(`${this.apiBase}/events`, eventData).subscribe({
       next: () => {
         alert('Event erfolgreich hinzugefügt!');
         this.fetchData();
@@ -156,7 +165,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
       geoY: this.newLocation.geoY,
       capacity: this.newLocation.capacity
     };
-    this.http.post('http://localhost:8080/locations', locationData).subscribe({
+    this.http.post(`${this.apiBase}/locations`, locationData).subscribe({
       next: () => {
         alert('Location erfolgreich hinzugefügt!');
         this.fetchLocations();
@@ -178,7 +187,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
       price: this.newTicket.price,
       event: { id: this.newTicket.eventId }
     };
-    this.http.post('http://localhost:8080/tickets', ticketData).subscribe({
+    this.http.post(`${this.apiBase}/tickets`, ticketData).subscribe({
       next: (createdTicket: any) => { // Backend liefert das erstellte Ticket zurück
         alert('Ticket erfolgreich erstellt!');
         this.tickets.push(createdTicket); // Direktes Aktualisieren der Ticketliste
@@ -213,7 +222,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   }
 
   deleteEvent(id: number) {
-    this.http.delete(`http://localhost:8080/events/${id}`).subscribe({
+    this.http.delete(`${this.apiBase}/events/${id}`).subscribe({
       next: () => {
         alert('Event erfolgreich gelöscht!');
         this.fetchData();
@@ -226,7 +235,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   }
 
   deleteTicket(id: number) {
-    this.http.delete(`http://localhost:8080/tickets/${id}`).subscribe({
+    this.http.delete(`${this.apiBase}/tickets/${id}`).subscribe({
       next: () => {
         alert('Ticket erfolgreich gelöscht!');
         this.fetchData();
@@ -239,7 +248,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   }
 
   deleteLocation(id: number) {
-    this.http.delete(`http://localhost:8080/locations/${id}`).subscribe({
+    this.http.delete(`${this.apiBase}/locations/${id}`).subscribe({
       next: () => {
         alert('Location erfolgreich gelöscht!');
         this.fetchData();
