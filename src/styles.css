@@ -4,6 +4,13 @@
 @tailwind components;
 @tailwind utilities;
 
+:root *, :root *::before, :root *::after {
+  box-sizing: border-box;
+  border-width: 0;
+  border-style: none;
+  border-color: #e5e7eb;
+}
+
 :root {
   --color-bg: 255 255 255;
   --color-fg: 17 24 39;
@@ -32,3 +39,72 @@ body {
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+/* --- Global overrides for Angular Material form fields --- */
+/* Make all Material form fields use full width of their container */
+.mat-mdc-form-field {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Ensure input/select content fills available space */
+input[matInput],
+.mat-mdc-select,
+.mat-mdc-select-trigger,
+.mat-mdc-text-field-wrapper {
+  width: 100%;
+}
+
+/* Prevent labels from overflowing right border */
+.mat-mdc-form-field .mdc-floating-label {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ensure outlined/no-label variants keep a wide input area */
+.mdc-text-field--outlined .mat-mdc-form-field-infix,
+.mdc-text-field--no-label .mat-mdc-form-field-infix {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Keep suffix content compact so it doesn't squeeze the input */
+.mdc-text-field--outlined .mat-mdc-form-field-icon-suffix,
+.mdc-text-field--no-label .mat-mdc-form-field-icon-suffix,
+.mat-mdc-form-field-suffix {
+  flex: 0 0 auto !important;
+}
+
+/* Let the infix (input area) grow, keep suffix sized to content */
+.mat-mdc-form-field-infix {
+  min-width: 0;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+}
+.mat-mdc-form-field-suffix {
+  flex: 0 0 auto !important;
+}
+
+/* Ensure the flex wrapper stretches input area */
+.mat-mdc-form-field-flex {
+  align-items: stretch !important;
+}
+
+/* Ensure the actual input node stretches */
+.mdc-text-field__input {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* For selects, ensure trigger/infix stretch */
+.mat-mdc-select-trigger {
+  width: 100% !important;
+}
+
+/* In grids, prevent fields from enforcing a large min-width */
+form.grid .mat-mdc-form-field {
+  min-width: 0;
+}

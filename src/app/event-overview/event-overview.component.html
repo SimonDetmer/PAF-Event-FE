@@ -9,24 +9,30 @@
       </mat-card-header>
       <mat-card-content>
         <form (ngSubmit)="createEvent()" class="grid gap-4 md:grid-cols-3">
-          <mat-form-field appearance="outline" class="md:col-span-1">
+          <mat-form-field appearance="outline" class="md:col-span-1 w-full">
             <mat-label>Titel</mat-label>
             <input matInput id="title" type="text" [(ngModel)]="newEvent.title" name="title" required pattern=".*\S.*" #titleCtrl="ngModel">
             <mat-error *ngIf="titleCtrl.errors?.['required']">Der Titel ist erforderlich.</mat-error>
             <mat-error *ngIf="titleCtrl.errors?.['pattern']">Der Titel darf nicht nur aus Leerzeichen bestehen.</mat-error>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="md:col-span-1">
+          <mat-form-field appearance="outline" class="md:col-span-1 w-full">
             <mat-label>Ort</mat-label>
             <mat-select id="location" [(ngModel)]="newEvent.locationId" name="locationId" required>
               <mat-option *ngFor="let loc of locations" [value]="loc.id">{{ loc.street }}</mat-option>
             </mat-select>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="md:col-span-1">
-            <mat-label>Datum &amp; Uhrzeit</mat-label>
-            <input matInput id="eventDateTime" type="datetime-local" [(ngModel)]="newEvent.eventDateTime" name="eventDateTime" required #eventDateTimeCtrl="ngModel">
-            <mat-error *ngIf="eventDateTimeCtrl.errors?.['required']">Datum und Uhrzeit sind erforderlich.</mat-error>
+          <mat-form-field appearance="outline" class="md:col-span-1 w-full">
+            <mat-label>Datum</mat-label>
+            <input matInput id="eventDate" type="date" [(ngModel)]="newEvent.eventDate" name="eventDate" required #eventDateCtrl="ngModel">
+            <mat-error *ngIf="eventDateCtrl.errors?.['required']">Datum ist erforderlich.</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="md:col-span-1 w-full">
+            <mat-label>Uhrzeit</mat-label>
+            <input matInput id="eventTime" type="time" [(ngModel)]="newEvent.eventTime" name="eventTime" required step="60" #eventTimeCtrl="ngModel">
+            <mat-error *ngIf="eventTimeCtrl.errors?.['required']">Uhrzeit ist erforderlich.</mat-error>
           </mat-form-field>
 
           <div class="md:col-span-3">
@@ -42,24 +48,26 @@
       </mat-card-header>
       <mat-card-content>
         <form (ngSubmit)="createLocation()" class="grid gap-4 md:grid-cols-4">
-          <mat-form-field appearance="outline" class="md:col-span-2">
+          <mat-form-field appearance="outline" class="md:col-span-2 w-full">
             <mat-label>Straße</mat-label>
             <input matInput id="street" type="text" [(ngModel)]="newLocation.street" name="street" required pattern=".*\S.*" #streetCtrl="ngModel">
             <mat-error *ngIf="streetCtrl.errors?.['required']">Die Straße ist erforderlich.</mat-error>
             <mat-error *ngIf="streetCtrl.errors?.['pattern']">Die Straße darf nicht nur aus Leerzeichen bestehen.</mat-error>
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Geo-Koordinate X</mat-label>
-            <input matInput id="geoX" type="number" [(ngModel)]="newLocation.geoX" name="geoX" step="0.0001" min="-180" max="180" required pattern="^-?(180(\.0{1,4})?|[0-9]{1,2}(\.\d{1,4})?)$" #geoXCtrl="ngModel">
-            <mat-error *ngIf="geoXCtrl.errors?.['required']">Dieses Feld ist erforderlich.</mat-error>
-            <mat-error *ngIf="geoXCtrl.errors?.['min'] || geoXCtrl.errors?.['max']">Der Wert muss zwischen -180 und 180 liegen.</mat-error>
-            <mat-error *ngIf="geoXCtrl.errors?.['pattern']">Bitte eine gültige Zahl mit maximal vier Nachkommastellen eingeben.</mat-error>
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Geo-Koordinate X (optional)</mat-label>
+            <input matInput id="geoX" type="number" [(ngModel)]="newLocation.geoX" name="geoX" step="0.0001" min="-180" max="180">
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Geo-Koordinate Y (optional)</mat-label>
+            <input matInput id="geoY" type="number" [(ngModel)]="newLocation.geoY" name="geoY" step="0.0001" min="-90" max="90">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="w-full">
             <mat-label>Kapazität</mat-label>
-            <input matInput id="capacity" type="text" [(ngModel)]="newLocation.capacity" name="capacity" required>
+            <input matInput id="capacity" type="number" [(ngModel)]="newLocation.capacity" name="capacity" required min="0" step="1">
           </mat-form-field>
 
           <div class="md:col-span-4">
@@ -163,6 +171,7 @@
 
   <div>
     <button mat-stroked-button (click)="showDashboard()">Dashboard</button>
+    <button mat-stroked-button color="primary" *ngIf="userRole !== 'eventmanager'" (click)="enterEventManager()" class="ml-2">Eventmanager öffnen</button>
   </div>
 
   <ng-template #loading>

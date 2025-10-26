@@ -1,0 +1,40 @@
+/* Make Material form fields occupy full column width */
+:host ::ng-deep .mat-mdc-form-field {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Ensure inputs/selects expand to full width */
+:host ::ng-deep input[matInput],
+:host ::ng-deep .mat-mdc-select {
+  width: 100%;
+}
+
+/* Prevent long labels from overflowing the right border */
+:host ::ng-deep .mat-mdc-form-field .mdc-floating-label {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* In tight grid columns, prevent infix from shrinking too much vs. suffix */
+:host ::ng-deep .mat-mdc-form-field-infix {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Help grid children shrink properly */
+:host ::ng-deep form.grid .mat-mdc-form-field {
+  min-width: 0;
+}
+
+/* Keep suffix (icons) from grabbing too much width */
+:host ::ng-deep .mat-mdc-form-field-suffix {
+  flex: 0 0 auto;
+}
+
+/* Ensure select trigger fills width like inputs */
+:host ::ng-deep .mat-mdc-select-trigger {
+  width: 100%;
+}

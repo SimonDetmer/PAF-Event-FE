@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../api.config';
-import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule, NgForOf, NgIf } from '@angular/common';
@@ -31,7 +31,8 @@ interface AppEvent {
   standalone: true,
   imports: [NgIf, NgForOf, FormsModule, CommonModule, MatCardModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule, MatListModule, MatCheckboxModule],
   templateUrl: './event-overview.component.html',
-  styleUrls: ['./event-overview.component.css']
+  styleUrls: ['./event-overview.component.css'],
+  encapsulation: ViewEncapsulation.None
 })
 export class EventOverviewComponent implements OnInit, OnDestroy {
   data: any;
@@ -40,7 +41,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   tickets: any[] = [];
   userRole: string | null = null;
 
-  newEvent = { title: '', locationId: null, eventDateTime: '' };
+  newEvent = { title: '', locationId: null as number | null, eventDateTime: '', eventDate: '', eventTime: '' };
   newLocation = { street: '', geoX: null, geoY: null, capacity: null };
   newTicket = { eventId: null, price: null };
 
@@ -131,21 +132,32 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
     this.router.navigate(['/dashboard'], { queryParams: { role: this.userRole } });
   }
 
+  enterEventManager(): void {
+    this.userRole = 'eventmanager';
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { role: 'eventmanager' },
+      queryParamsHandling: 'merge'
+    });
+    this.fetchData();
+  }
+
   createEvent(): void {
-    if (!this.newEvent.title || !this.newEvent.locationId || !this.newEvent.eventDateTime) {
+    if (!this.newEvent.title || !this.newEvent.locationId || !this.newEvent.eventDate || !this.newEvent.eventTime) {
       alert('Bitte füllen Sie alle Felder aus.');
       return;
     }
+    const combinedDateTime = `${this.newEvent.eventDate}T${this.newEvent.eventTime}:00`;
     const eventData = {
       title: this.newEvent.title,
       location: { id: this.newEvent.locationId },
-      eventDateTime: this.newEvent.eventDateTime
+      eventDateTime: combinedDateTime
     };
     this.http.post(`${this.apiBase}/events`, eventData).subscribe({
       next: () => {
         alert('Event erfolgreich hinzugefügt!');
         this.fetchData();
-        this.newEvent = { title: '', locationId: null, eventDateTime: '' };
+        this.newEvent = { title: '', locationId: null, eventDateTime: '', eventDate: '', eventTime: '' };
       },
       error: error => {
         console.error('Fehler beim Erstellen des Events:', error);
@@ -155,16 +167,26 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   }
 
   createLocation(): void {
-    if (!this.newLocation.street) {
+    if (!this.newLocation.street || String(this.newLocation.street).trim().length === 0) {
       alert('Bitte geben Sie eine Straße ein.');
       return;
     }
-    const locationData = {
-      street: this.newLocation.street,
-      geoX: this.newLocation.geoX,
-      geoY: this.newLocation.geoY,
-      capacity: this.newLocation.capacity
+    const normalizedGeoXRaw = (this.newLocation as any).geoX === '' || this.newLocation.geoX === null || this.newLocation.geoX === undefined ? null : Number(this.newLocation.geoX);
+    const normalizedGeoYRaw = (this.newLocation as any).geoY === '' || this.newLocation.geoY === null || this.newLocation.geoY === undefined ? null : Number(this.newLocation.geoY);
+    const normalizedGeoX = normalizedGeoXRaw === null || Number.isNaN(normalizedGeoXRaw) ? 0 : normalizedGeoXRaw;
+    const normalizedGeoY = normalizedGeoYRaw === null || Number.isNaN(normalizedGeoYRaw) ? 0 : normalizedGeoYRaw;
+    const normalizedCapacity = (this.newLocation as any).capacity === '' || this.newLocation.capacity === null || this.newLocation.capacity === undefined ? null : Number(this.newLocation.capacity);
+    if (normalizedCapacity === null || Number.isNaN(normalizedCapacity) || normalizedCapacity <= 0) {
+      alert('Kapazität muss eine Zahl größer 0 sein.');
+      return;
+    }
+    const locationData: any = {
+      street: String(this.newLocation.street).trim(),
+      capacity: normalizedCapacity,
+      geoX: normalizedGeoX,
+      geoY: normalizedGeoY
     };
+    console.log('POST /locations payload:', locationData);
     this.http.post(`${this.apiBase}/locations`, locationData).subscribe({
       next: () => {
         alert('Location erfolgreich hinzugefügt!');
@@ -173,7 +195,8 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
       },
       error: error => {
         console.error('Fehler beim Erstellen der Location:', error);
-        alert('Location konnte nicht hinzugefügt werden.');
+        const backendMsg = (error?.error && (error.error.message || JSON.stringify(error.error))) || error?.message || 'Unbekannter Fehler';
+        alert(`Location konnte nicht hinzugefügt werden.\nDetails: ${backendMsg}`);
       }
     });
   }
