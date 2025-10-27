@@ -1,5 +1,6 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { RouterModule, RouterOutlet } from '@angular/router';
+import { Router } from '@angular/router';
 import { DOCUMENT } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,7 +18,7 @@ export class AppComponent implements OnInit {
   dark = false;
   sidenavOpen = true;
 
-  constructor(@Inject(DOCUMENT) private readonly document: Document) {}
+  constructor(@Inject(DOCUMENT) private readonly document: Document, private router: Router) {}
 
   ngOnInit(): void {
     const saved = localStorage.getItem('theme');
@@ -46,5 +47,14 @@ export class AppComponent implements OnInit {
     } else {
       rootEl.classList.remove('dark');
     }
+  }
+
+  logout(): void {
+    // Optional: clear any session-like state
+    localStorage.removeItem('theme');
+    this.dark = false;
+    this.applyDarkClass();
+    this.sidenavOpen = false;
+    this.router.navigate(['/login']);
   }
 }

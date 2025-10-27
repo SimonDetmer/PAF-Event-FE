@@ -4,9 +4,7 @@
   </button>
   <span class="pl-2 font-medium">Event MFE</span>
   <span class="flex-1"></span>
-  <button mat-icon-button (click)="toggleDarkMode()" [attr.aria-label]="dark ? 'Switch to light mode' : 'Switch to dark mode'">
-    <mat-icon>{{ dark ? 'light_mode' : 'dark_mode' }}</mat-icon>
-  </button>
+  <button mat-stroked-button color="warn" (click)="logout()" aria-label="Logout">Logout</button>
 </mat-toolbar>
 
 <mat-sidenav-container style="height: calc(100vh - 64px);">
