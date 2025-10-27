@@ -6,11 +6,13 @@ import {TicketBuyComponent} from './ticket-buy/ticket-buy.component';
 import {NotFoundComponent} from './not-found/not-found.component';
 import {DashboardComponent} from './dashboard/dashboard.component';
 import {CreateUserComponent} from './create-user/create-user.component';
+import {UserLoginComponent} from './user-login/user-login.component';
 
 export const routes: Routes = [
   {path: '', redirectTo: 'login', pathMatch: 'full'},
   {path: 'event-overview', component: EventOverviewComponent},
   {path: 'login', component: LoginComponent},
+  {path: 'user-login', component: UserLoginComponent},
   {path: 'create-user', component: CreateUserComponent},
   {path: 'ticket-buy', component: TicketBuyComponent},
   {path: 'dashboard', component: DashboardComponent},

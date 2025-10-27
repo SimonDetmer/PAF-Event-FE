@@ -25,4 +25,8 @@ export class LoginComponent {
   goToCreateUser(): void {
     this.router.navigate(['/create-user']);
   }
+
+  goToUserLogin(): void {
+    this.router.navigate(['/user-login']);
+  }
 }
