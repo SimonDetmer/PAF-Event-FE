@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms'; // Für ngModel im Dropdown
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { EmailValidatorService } from '../email-validator.service';
+import { API_BASE_URL } from '../api.config';
 
 @Component({
   selector: 'app-ticket-buy',
@@ -32,7 +33,8 @@ export class TicketBuyComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private router: Router,
     private fb: FormBuilder,
-    private emailValidator: EmailValidatorService
+    private emailValidator: EmailValidatorService,
+    @Inject(API_BASE_URL) private readonly apiBase: string
   ) {
     this.userForm = this.fb.group({
       email: ['', [Validators.required, Validators.email], [this.emailValidator.validate.bind(this.emailValidator)]]
@@ -84,7 +86,7 @@ export class TicketBuyComponent implements OnInit, OnDestroy {
 
     const userData = this.userForm.value;
 
-    this.http.post<any>('http://localhost:8080/users', userData).subscribe({
+    this.http.post<any>(`${this.apiBase}/users`, userData).subscribe({
       next: createdUser => {
         console.log('User created or found:', createdUser);
         this.createOrder(createdUser.id);
@@ -115,7 +117,7 @@ export class TicketBuyComponent implements OnInit, OnDestroy {
 
     console.log('Sending order payload:', JSON.stringify(orderPayload, null, 2));
 
-    this.http.post<any>('http://localhost:8080/orders', orderPayload).subscribe({
+    this.http.post<any>(`${this.apiBase}/orders`, orderPayload).subscribe({
       next: () => {
         alert('Ihre Bestellung wurde erfolgreich aufgegeben!');
         this.router.navigate(['/']);

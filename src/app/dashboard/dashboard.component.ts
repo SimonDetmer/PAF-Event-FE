@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import {ReportComponent} from '../report/report.component';
+import { API_BASE_URL } from '../api.config';
 
 @Component({
   selector: 'app-dashboard',
@@ -14,7 +15,6 @@ import {ReportComponent} from '../report/report.component';
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
-  private readonly API_URL = 'http://localhost:8080';
   userRole: string | null = null;
   events: any[] = [];
   tickets: any[] = [];
@@ -29,7 +29,8 @@ export class DashboardComponent implements OnInit {
   constructor(
     private http: HttpClient,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    @Inject(API_BASE_URL) private readonly apiBase: string,
   ) {
     this.route.queryParams.subscribe(params => {
       this.userRole = params['role'] || 'Unbekannt';
@@ -39,13 +40,22 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     if (this.userRole === 'eventmanager') {
       this.loadData();
+    } else {
+      // If an email is provided via query params, prefill and load
+      this.route.queryParams.subscribe(params => {
+        const qpEmail = params['email'];
+        if (qpEmail) {
+          this.customerForm.email = String(qpEmail);
+          this.loadCustomerData();
+        }
+      });
     }
   }
 
   loadData(): void {
     forkJoin({
-      events: this.http.get<any[]>(`${this.API_URL}/events`),
-      tickets: this.http.get<any[]>(`${this.API_URL}/tickets`)
+      events: this.http.get<any[]>(`${this.apiBase}/events`),
+      tickets: this.http.get<any[]>(`${this.apiBase}/tickets`)
     }).subscribe(({ events, tickets }) => {
       this.events = events;
       this.tickets = tickets;
@@ -80,9 +90,9 @@ export class DashboardComponent implements OnInit {
     this.customerEvents = [];
 
     // Suche den Kunden ausschließlich anhand der E-Mail
-    this.http.get<any[]>(`${this.API_URL}/users`).subscribe(users => {
+    this.http.get<any[]>(`${this.apiBase}/users`).subscribe(users => {
       const foundUser = users.find(u =>
-        u.email.trim() === this.customerForm.email.trim()
+        String(u.email ?? '').trim().toLowerCase() === String(this.customerForm.email ?? '').trim().toLowerCase()
       );
       if (!foundUser) {
         this.errorMessage = 'Kein Benutzer gefunden. Bitte überprüfen Sie Ihre Eingaben oder registrieren Sie sich.';
@@ -101,7 +111,7 @@ export class DashboardComponent implements OnInit {
   }
 
   loadEventsAndProcessOrders(): void {
-    this.http.get<any[]>(`${this.API_URL}/events`).subscribe(events => {
+    this.http.get<any[]>(`${this.apiBase}/events`).subscribe(events => {
       const ticketIdToEvent = events.reduce((acc: { [ticketId: number]: any }, event: any) => {
         if (event.tickets && event.tickets.length) {
           event.tickets.forEach((ticket: any) => {

@@ -21,4 +21,8 @@ export class LoginComponent {
       alert('Bitte wählen Sie eine Rolle aus.');
     }
   }
+
+  goToCreateUser(): void {
+    this.router.navigate(['/create-user']);
+  }
 }
