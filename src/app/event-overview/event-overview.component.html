@@ -113,19 +113,27 @@
     <mat-card-content>
       <div *ngIf="data && data.length > 0; else loading" class="space-y-2">
         <mat-nav-list>
-          <a mat-list-item *ngFor="let item of data">
-            <mat-checkbox [disabled]="(item?.availableTickets  < 0)" (change)="toggleEventSelection(item.id, $event.checked)"></mat-checkbox>
+          <div mat-list-item *ngFor="let item of data">
+            <mat-checkbox [disabled]="(item?.availableTickets  < 0)"
+                          [(ngModel)]="selectedMap[item.id]"
+                          (ngModelChange)="toggleEventSelection(item.id, $event)"></mat-checkbox>
             <div matListItemTitle>{{ item.title }}</div>
             <div matListItemLine>{{ item.location?.street }} — {{ item?.eventDateTime | date:'dd.MM.yyyy HH:mm' }}</div>
             <div matListItemLine class="text-sm text-gray-500 dark:text-gray-400">
               Ticket Preis: {{ item.tickets[0].price }} · Kapazität: {{item.location?.capacity}} · Verfügbare Tickets: {{ item?.availableTickets > 0 ? item?.availableTickets : 'Keine Tickets mehr verfügbar' }}
             </div>
+            <div class="ml-4">
+              <mat-form-field appearance="outline" class="w-28">
+                <mat-label>Anzahl</mat-label>
+                <input matInput type="number" min="1" [ngModel]="selectedTicketCounts[item.id]" (ngModelChange)="selectedTicketCounts[item.id] = $event" />
+              </mat-form-field>
+            </div>
             <span class="flex-1"></span>
             <button mat-stroked-button color="warn" *ngIf="userRole === 'eventmanager'" (click)="deleteEvent(item.id)">Event löschen</button>
-          </a>
+          </div>
         </mat-nav-list>
         <div class="pt-2">
-          <button mat-flat-button color="primary" (click)="orderTickets()">Ticket bestellen</button>
+          <button mat-flat-button color="primary" (click)="addToCart()">Add to cart</button>
         </div>
       </div>
     </mat-card-content>

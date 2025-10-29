@@ -1,19 +1,14 @@
-<h2>Ticket-Bestellung</h2>
+<h2>Cart</h2>
 
-<div *ngIf="selectedEvents && selectedEvents.length > 0; else noSelection">
-  <div *ngFor="let event of selectedEvents">
-    <h3>{{ event.title }}</h3>
-    <p>Ort: {{ event.location?.street }}</p>
-    <p>Datum & Uhrzeit: {{ event.eventDateTime | date:'dd.MM.yyyy HH:mm' }}</p>
-    <p>
-      Ticket Preis: {{ event.tickets[0]?.price ? event.tickets[0].price : 'Nicht verfügbar' }}
-    </p>
-    <!-- Dropdown zur Auswahl der Ticketanzahl (1 bis 100) -->
-    <label for="ticketCount{{ event.id }}">Ticket Anzahl:</label>
-    <select [(ngModel)]="selectedTicketCounts[event.id]" name="ticketCount{{ event.id }}">
-      <option *ngFor="let num of ticketNumbers" [value]="num">{{ num }}</option>
-    </select>
-    <hr>
+<div *ngIf="items && items.length > 0; else emptyCart">
+  <div *ngFor="let it of items" class="mb-3">
+    <div><strong>{{ it.title }}</strong></div>
+    <div>Preis: {{ it.price }}</div>
+    <div>
+      Anzahl:
+      <input type="number" min="1" [ngModel]="it.quantity" (ngModelChange)="order.updateQuantity(it.eventId, $event)" />
+      <button type="button" (click)="order.removeItem(it.eventId)">Entfernen</button>
+    </div>
   </div>
 
   <h3>Ihre Daten</h3>
@@ -28,10 +23,12 @@
       </span>
     </div>
 
-    <button type="submit">Jetzt bestellen</button>
+    <div class="mt-4">
+      <button type="submit">Buy Tickets</button>
+    </div>
   </form>
 </div>
 
-<ng-template #noSelection>
-  <p>Keine Events ausgewählt.</p>
+<ng-template #emptyCart>
+  <p>Ihr Warenkorb ist leer.</p>
 </ng-template>

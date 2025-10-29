@@ -12,6 +12,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { OrderService } from '../order.service';
 
 interface Ticket {
   id: number;
@@ -46,6 +47,8 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   newTicket = { eventId: null, price: null };
 
   selectedEventIds: number[] = [];
+  selectedTicketCounts: { [eventId: number]: number } = {};
+  selectedMap: { [eventId: number]: boolean } = {};
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -53,6 +56,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     @Inject(API_BASE_URL) private readonly apiBase: string,
+    private order: OrderService,
   ) {}
 
   ngOnInit(): void {
@@ -103,29 +107,36 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   }
 
   toggleEventSelection(eventId: number, isChecked: boolean): void {
-    if (isChecked) {
-      if (!this.selectedEventIds.includes(eventId)) {
-        this.selectedEventIds.push(eventId);
-      }
-    } else {
-      this.selectedEventIds = this.selectedEventIds.filter(id => id !== eventId);
+    // Kept for compatibility if used elsewhere; selection now primarily uses selectedMap via ngModel
+    this.selectedMap[eventId] = isChecked;
+    if (isChecked && !this.selectedTicketCounts[eventId]) {
+      this.selectedTicketCounts[eventId] = 1;
     }
   }
 
-  orderTickets(): void {
-    const selectedEvents = this.data
-      .filter((event: any) => this.selectedEventIds.includes(event.id))
-      .map((event: any) => {
-        const matchingTicket = this.tickets.find(ticket => ticket.event && ticket.event.id === event.id);
-        if (matchingTicket) {
-          event.ticketPrice = matchingTicket.price;
-          event.ticketId = matchingTicket.id;
-        }
-        return event;
-      });
-    this.router.navigate(['/ticket-buy'], {
-      queryParams: { events: JSON.stringify(selectedEvents) }
+  addToCart(): void {
+    const selectedEvents = this.data.filter((event: any) => !!this.selectedMap[event.id]);
+    if (selectedEvents.length === 0) {
+      alert('Bitte wählen Sie mindestens ein Event aus.');
+      return;
+    }
+    selectedEvents.forEach((event: any) => {
+      const matchingTicket = this.tickets.find(t => t.event && t.event.id === event.id);
+      const price = matchingTicket ? matchingTicket.price : (event.tickets?.[0]?.price ?? 0);
+      const qty = this.selectedTicketCounts[event.id] || 1;
+      if (qty > 0 && price != null) {
+        this.order.addItem({ eventId: event.id, title: event.title, price, quantity: qty });
+        console.log('Added to order:', { eventId: event.id, title: event.title, price, quantity: qty });
+      }
     });
+    console.log('Order items after add:', this.order.getItems());
+    // optional: feedback
+    alert('Ausgewählte Tickets wurden dem Warenkorb hinzugefügt.');
+    // clear selections
+    this.selectedEventIds = [];
+    this.selectedMap = {};
+    // navigate to Cart
+    this.router.navigate(['/ticket-buy']);
   }
 
   showDashboard(): void {

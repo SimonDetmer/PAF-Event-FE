@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -8,6 +8,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { EmailValidatorService } from '../email-validator.service';
 import { API_BASE_URL } from '../api.config';
+import { OrderService, OrderItem } from '../order.service';
 
 @Component({
   selector: 'app-ticket-buy',
@@ -17,11 +18,7 @@ import { API_BASE_URL } from '../api.config';
   styleUrls: ['./ticket-buy.component.css']
 })
 export class TicketBuyComponent implements OnInit, OnDestroy {
-  selectedEvents: any[] = [];
-  // Objekt, in dem pro Event-ID die gewählte Ticketanzahl gespeichert wird
-  selectedTicketCounts: { [key: number]: number } = {};
-  // Array von 1 bis 100 für das Dropdown
-  ticketNumbers: number[] = Array.from({ length: 100 }, (_, i) => i + 1);
+  items: OrderItem[] = [];
 
   userForm: FormGroup;
   public emailExists: boolean = false;
@@ -29,12 +26,12 @@ export class TicketBuyComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
-    private route: ActivatedRoute,
     private http: HttpClient,
     private router: Router,
     private fb: FormBuilder,
     private emailValidator: EmailValidatorService,
-    @Inject(API_BASE_URL) private readonly apiBase: string
+    @Inject(API_BASE_URL) private readonly apiBase: string,
+    public order: OrderService
   ) {
     this.userForm = this.fb.group({
       email: ['', [Validators.required, Validators.email], [this.emailValidator.validate.bind(this.emailValidator)]]
@@ -42,21 +39,8 @@ export class TicketBuyComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
-      if (params['events']) {
-        try {
-          this.selectedEvents = JSON.parse(params['events']);
-          // Für jedes Event den Defaultwert 1 setzen, falls noch nicht vorhanden.
-          this.selectedEvents.forEach(event => {
-            if (!this.selectedTicketCounts[event.id]) {
-              this.selectedTicketCounts[event.id] = 1;
-            }
-          });
-        } catch (e) {
-          console.error('Error parsing event data:', e);
-        }
-      }
-    });
+    this.items = this.order.getItems();
+    console.log('Cart items on init:', this.items);
 
     this.userForm.get('email')?.statusChanges.pipe(takeUntil(this.destroy$)).subscribe(() => {
       const errors = this.userForm.get('email')?.errors;
@@ -84,6 +68,11 @@ export class TicketBuyComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.items.length === 0) {
+      alert('Ihr Warenkorb ist leer.');
+      return;
+    }
+
     const userData = this.userForm.value;
 
     this.http.post<any>(`${this.apiBase}/users`, userData).subscribe({
@@ -99,15 +88,13 @@ export class TicketBuyComponent implements OnInit, OnDestroy {
   }
 
   createOrder(userId: number): void {
-    // Für jedes Event werden so viele Ticket-Objekte erstellt,
-    // wie im Dropdown (selectedTicketCounts) ausgewählt wurde.
-    const tickets = this.selectedEvents.flatMap(event => {
-      const count = this.selectedTicketCounts[event.id] || 1;
-      return Array.from({ length: count }, () => ({
-        price: event.ticketPrice || (event.tickets && event.tickets.length > 0 ? event.tickets[0].price : null),
-        event: { id: event.id }
-      }));
-    });
+    // Aus Warenkorbpositionen passende Ticket-Objekte erzeugen
+    const tickets = this.items.flatMap(it =>
+      Array.from({ length: it.quantity }, () => ({
+        price: it.price,
+        event: { id: it.eventId }
+      }))
+    );
 
     const orderPayload = {
       user: { id: userId },
@@ -120,7 +107,9 @@ export class TicketBuyComponent implements OnInit, OnDestroy {
     this.http.post<any>(`${this.apiBase}/orders`, orderPayload).subscribe({
       next: () => {
         alert('Ihre Bestellung wurde erfolgreich aufgegeben!');
-        this.router.navigate(['/']);
+        this.order.clear();
+        this.items = [];
+        this.router.navigate(['/event-overview']);
       },
       error: error => {
         console.error('Error creating order:', error);
