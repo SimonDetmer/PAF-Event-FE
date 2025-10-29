@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms'; // Für ngModel im Dropdown
+import { MatButtonModule } from '@angular/material/button';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { EmailValidatorService } from '../email-validator.service';
@@ -13,7 +14,7 @@ import { OrderService, OrderItem } from '../order.service';
 @Component({
   selector: 'app-ticket-buy',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, MatButtonModule],
   templateUrl: './ticket-buy.component.html',
   styleUrls: ['./ticket-buy.component.css']
 })

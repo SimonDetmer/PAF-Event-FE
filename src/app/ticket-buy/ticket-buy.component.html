@@ -1,4 +1,4 @@
-<h2>Cart</h2>
+<h2 class="text-2xl font-semibold">Cart</h2>
 
 <div *ngIf="items && items.length > 0; else emptyCart">
   <div *ngFor="let it of items" class="mb-3">
@@ -7,7 +7,7 @@
     <div>
       Anzahl:
       <input type="number" min="1" [ngModel]="it.quantity" (ngModelChange)="order.updateQuantity(it.eventId, $event)" />
-      <button type="button" (click)="order.removeItem(it.eventId)">Entfernen</button>
+      <button mat-stroked-button color="warn" type="button" (click)="order.removeItem(it.eventId)">Entfernen</button>
     </div>
   </div>
 
@@ -24,7 +24,7 @@
     </div>
 
     <div class="mt-4">
-      <button type="submit">Buy Tickets</button>
+      <button mat-flat-button color="primary" type="submit">Buy Tickets</button>
     </div>
   </form>
 </div>

@@ -6,11 +6,13 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import {ReportComponent} from '../report/report.component';
 import { API_BASE_URL } from '../api.config';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTableModule } from '@angular/material/table';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, DatePipe, FormsModule, ReportComponent],
+  imports: [CommonModule, DatePipe, FormsModule, MatButtonModule, MatTableModule, ReportComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -25,6 +27,8 @@ export class DashboardComponent implements OnInit {
   customerOrders: any[] = [];
   customerEvents: any[] = [];
   errorMessage: string = '';
+  displayedColumnsManager: string[] = ['id', 'title', 'date', 'sold', 'price', 'total'];
+  displayedColumnsCustomer: string[] = ['eventId', 'title', 'date', 'count', 'price', 'total'];
 
   constructor(
     private http: HttpClient,

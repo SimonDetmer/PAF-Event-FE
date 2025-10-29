@@ -7,10 +7,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
+import { MatBadgeModule } from '@angular/material/badge';
+import { OrderService } from './order.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterModule, MatToolbarModule, MatButtonModule, MatIconModule, MatSidenavModule, MatListModule],
+  imports: [RouterOutlet, RouterModule, MatToolbarModule, MatButtonModule, MatIconModule, MatSidenavModule, MatListModule, MatBadgeModule],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
@@ -18,7 +20,7 @@ export class AppComponent implements OnInit {
   dark = false;
   sidenavOpen = true;
 
-  constructor(@Inject(DOCUMENT) private readonly document: Document, private router: Router) {}
+  constructor(@Inject(DOCUMENT) private readonly document: Document, private router: Router, public order: OrderService) {}
 
   ngOnInit(): void {
     const saved = localStorage.getItem('theme');
@@ -56,5 +58,9 @@ export class AppComponent implements OnInit {
     this.applyDarkClass();
     this.sidenavOpen = false;
     this.router.navigate(['/login']);
+  }
+
+  get orderCount(): number {
+    return this.order.getTotalCount();
   }
 }

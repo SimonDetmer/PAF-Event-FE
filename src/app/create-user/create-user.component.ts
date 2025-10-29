@@ -1,6 +1,7 @@
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { API_BASE_URL } from '../api.config';
@@ -8,7 +9,7 @@ import { API_BASE_URL } from '../api.config';
 @Component({
   selector: 'app-create-user',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatButtonModule],
   templateUrl: './create-user.component.html',
   styleUrls: ['./create-user.component.css']
 })
