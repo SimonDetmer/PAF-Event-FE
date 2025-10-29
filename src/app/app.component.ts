@@ -1,7 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { RouterModule, RouterOutlet } from '@angular/router';
 import { Router } from '@angular/router';
-import { DOCUMENT } from '@angular/common';
+import { DOCUMENT, CommonModule } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,10 +9,11 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatBadgeModule } from '@angular/material/badge';
 import { OrderService } from './order.service';
+import { AuthService } from './auth.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterModule, MatToolbarModule, MatButtonModule, MatIconModule, MatSidenavModule, MatListModule, MatBadgeModule],
+  imports: [CommonModule, RouterOutlet, RouterModule, MatToolbarModule, MatButtonModule, MatIconModule, MatSidenavModule, MatListModule, MatBadgeModule],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
@@ -20,7 +21,7 @@ export class AppComponent implements OnInit {
   dark = false;
   sidenavOpen = true;
 
-  constructor(@Inject(DOCUMENT) private readonly document: Document, private router: Router, public order: OrderService) {}
+  constructor(@Inject(DOCUMENT) private readonly document: Document, private router: Router, public order: OrderService, private auth: AuthService) {}
 
   ngOnInit(): void {
     const saved = localStorage.getItem('theme');
@@ -30,6 +31,7 @@ export class AppComponent implements OnInit {
       this.dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
     this.applyDarkClass();
+    // If authenticated, remain on current route; otherwise redirect happens via guard
   }
 
   toggleDarkMode(): void {
@@ -57,10 +59,19 @@ export class AppComponent implements OnInit {
     this.dark = false;
     this.applyDarkClass();
     this.sidenavOpen = false;
+    this.auth.logout();
     this.router.navigate(['/login']);
   }
 
   get orderCount(): number {
     return this.order.getTotalCount();
+  }
+
+  get userRole(): string {
+    return this.auth.getRole();
+  }
+
+  get userEmail(): string | undefined {
+    return this.auth.getEmail();
   }
 }

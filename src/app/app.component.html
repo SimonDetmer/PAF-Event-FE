@@ -4,6 +4,10 @@
   </button>
   <span class="pl-2 font-medium">Event MFE</span>
   <span class="flex-1"></span>
+  <span class="mr-4 text-sm opacity-90" *ngIf="userRole">
+    Eingeloggt als: <strong>{{ userRole }}</strong>
+    <ng-container *ngIf="userEmail">({{ userEmail }})</ng-container>
+  </span>
   <button mat-stroked-button color="warn" (click)="logout()" aria-label="Logout">Logout</button>
 </mat-toolbar>
 

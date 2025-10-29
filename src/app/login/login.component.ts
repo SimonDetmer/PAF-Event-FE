@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AuthService } from '../auth.service';
 
 @Component({
   selector: 'app-login',
@@ -12,11 +13,13 @@ import { Router } from '@angular/router';
 export class LoginComponent {
   selectedRole: string | null = null;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private auth: AuthService) {}
 
   submitRole(): void {
     if (this.selectedRole) {
-      this.router.navigate(['/event-overview'], { queryParams: { role: this.selectedRole } });
+      const role = (this.selectedRole === 'eventmanager' ? 'eventmanager' : 'customer') as 'eventmanager' | 'customer';
+      this.auth.loginWithRole(role);
+      this.router.navigate(['/event-overview']);
     } else {
       alert('Bitte wählen Sie eine Rolle aus.');
     }

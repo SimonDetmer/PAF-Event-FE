@@ -7,15 +7,16 @@ import {NotFoundComponent} from './not-found/not-found.component';
 import {DashboardComponent} from './dashboard/dashboard.component';
 import {CreateUserComponent} from './create-user/create-user.component';
 import {UserLoginComponent} from './user-login/user-login.component';
+import { authGuard } from './auth.guard';
 
 export const routes: Routes = [
   {path: '', redirectTo: 'login', pathMatch: 'full'},
-  {path: 'event-overview', component: EventOverviewComponent},
+  {path: 'event-overview', component: EventOverviewComponent, canActivate: [authGuard]},
   {path: 'login', component: LoginComponent},
   {path: 'user-login', component: UserLoginComponent},
   {path: 'create-user', component: CreateUserComponent},
-  {path: 'ticket-buy', component: TicketBuyComponent},
-  {path: 'dashboard', component: DashboardComponent},
+  {path: 'ticket-buy', component: TicketBuyComponent, canActivate: [authGuard]},
+  {path: 'dashboard', component: DashboardComponent, canActivate: [authGuard]},
   {path: '**', component: NotFoundComponent}
 
   // Weitere Routen hier

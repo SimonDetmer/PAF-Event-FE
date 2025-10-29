@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { API_BASE_URL } from '../api.config';
+import { AuthService } from '../auth.service';
 
 @Component({
   selector: 'app-user-login',
@@ -21,6 +22,7 @@ export class UserLoginComponent {
     private http: HttpClient,
     private router: Router,
     @Inject(API_BASE_URL) private readonly apiBase: string,
+    private auth: AuthService,
   ) {}
 
   login(): void {
@@ -33,8 +35,9 @@ export class UserLoginComponent {
     this.http.get<boolean>(`${this.apiBase}/users/email/${encodeURIComponent(this.email)}`).subscribe({
       next: (exists) => {
         if (exists) {
-          // Navigate to customer dashboard and auto-load data
-          this.router.navigate(['/dashboard'], { queryParams: { role: 'customer', email: this.email } });
+          // Persist mock session and navigate to dashboard
+          this.auth.loginWithRole('customer', this.email);
+          this.router.navigate(['/dashboard']);
         } else {
           this.error = 'Kein Benutzer mit dieser E-Mail gefunden. Bitte legen Sie einen Benutzer an.';
         }
