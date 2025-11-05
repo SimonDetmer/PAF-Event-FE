@@ -24,6 +24,8 @@ interface AppEvent {
   id: number;
   title: string;
   tickets: Ticket[];
+  version: number;
+  availableTickets: number;
   // weitere Eigenschaften
 }
 
@@ -120,23 +122,50 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
       alert('Bitte wählen Sie mindestens ein Event aus.');
       return;
     }
+    
     selectedEvents.forEach((event: any) => {
       const matchingTicket = this.tickets.find(t => t.event && t.event.id === event.id);
       const price = matchingTicket ? matchingTicket.price : (event.tickets?.[0]?.price ?? 0);
       const qty = this.selectedTicketCounts[event.id] || 1;
-      if (qty > 0 && price != null) {
-        this.order.addItem({ eventId: event.id, title: event.title, price, quantity: qty });
-        console.log('Added to order:', { eventId: event.id, title: event.title, price, quantity: qty });
+      
+      if (qty <= 0) {
+        alert(`Ungültige Anzahl von Tickets für ${event.title}`);
+        return;
+      }
+      
+      if (qty > event.availableTickets) {
+        alert(`Nicht genügend Tickets verfügbar für ${event.title}. Verfügbar: ${event.availableTickets}`);
+        return;
+      }
+      
+      if (price != null) {
+        this.order.addItem({
+          eventId: event.id,
+          title: event.title,
+          price,
+          quantity: qty,
+          version: event.version || 1,
+          availableTickets: event.availableTickets - qty
+        });
+        console.log('Added to order:', { 
+          eventId: event.id, 
+          title: event.title, 
+          price, 
+          quantity: qty,
+          version: event.version,
+          availableTickets: event.availableTickets - qty
+        });
       }
     });
-    console.log('Order items after add:', this.order.getItems());
-    // optional: feedback
-    alert('Ausgewählte Tickets wurden dem Warenkorb hinzugefügt.');
-    // clear selections
-    this.selectedEventIds = [];
-    this.selectedMap = {};
-    // navigate to Cart
-    this.router.navigate(['/ticket-buy']);
+    
+    if (this.order.getItems().length > 0) {
+      // Clear selections
+      this.selectedEventIds = [];
+      this.selectedMap = {};
+      
+      // Navigate to Cart
+      this.router.navigate(['/ticket-buy']);
+    }
   }
 
   showDashboard(): void {

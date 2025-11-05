@@ -8,12 +8,26 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatBadgeModule } from '@angular/material/badge';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { OrderService } from './order.service';
 import { AuthService } from './auth.service';
+import { LoadingSpinnerComponent } from './shared/loading-spinner/loading-spinner.component';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, RouterModule, MatToolbarModule, MatButtonModule, MatIconModule, MatSidenavModule, MatListModule, MatBadgeModule],
+  imports: [
+    CommonModule, 
+    RouterOutlet, 
+    RouterModule, 
+    MatToolbarModule, 
+    MatButtonModule, 
+    MatIconModule, 
+    MatSidenavModule, 
+    MatListModule, 
+    MatBadgeModule,
+    MatProgressSpinnerModule,
+    LoadingSpinnerComponent
+  ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
