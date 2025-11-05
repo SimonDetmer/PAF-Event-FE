@@ -89,32 +89,58 @@ export class TicketBuyComponent implements OnInit, OnDestroy {
   }
 
   createOrder(userId: number): void {
-    // Aus Warenkorbpositionen passende Ticket-Objekte erzeugen
-    const tickets = this.items.flatMap(it =>
-      Array.from({ length: it.quantity }, () => ({
-        price: it.price,
-        event: { id: it.eventId }
-      }))
-    );
+    // Set loading state
+    this.order.setLoading(true);
+
+    // Create order items with version information
+    const orderItems = this.items.map(item => ({
+      eventId: item.eventId,
+      quantity: item.quantity,
+      version: item.version
+    }));
 
     const orderPayload = {
-      user: { id: userId },
-      status: 'NEW',
-      tickets: tickets
+      userId: userId,
+      items: orderItems
     };
 
     console.log('Sending order payload:', JSON.stringify(orderPayload, null, 2));
 
-    this.http.post<any>(`${this.apiBase}/orders`, orderPayload).subscribe({
-      next: () => {
+    this.http.post<any>(`${this.apiBase}/api/orders`, orderPayload).subscribe({
+      next: (order) => {
+        // Order successful
         alert('Ihre Bestellung wurde erfolgreich aufgegeben!');
         this.order.clear();
         this.items = [];
         this.router.navigate(['/event-overview']);
       },
-      error: error => {
+      error: (error) => {
         console.error('Error creating order:', error);
-        alert('Bestellung konnte nicht aufgegeben werden.');
+        
+        if (error.status === 409) {
+          // Handle concurrency conflict
+          alert('Die Veranstaltungsdaten wurden in der Zwischenzeit aktualisiert. Bitte überprüfen Sie die Verfügbarkeit und versuchen Sie es erneut.');
+          
+          // Refresh the page to get the latest data
+          window.location.reload();
+        } else if (error.status === 400 && error.error?.error === 'INSUFFICIENT_TICKETS') {
+          // Handle insufficient tickets
+          alert(`Fehler: ${error.error?.message || 'Nicht genügend Tickets verfügbar.'}`);
+          
+          // Update the cart with the latest available tickets
+          this.items = this.items.map(item => {
+            const updatedItem = { ...item };
+            // You might want to update the availableTickets here if the backend provides them
+            return updatedItem;
+          });
+        } else {
+          // Generic error
+          alert('Bestellung konnte nicht aufgegeben werden. Bitte versuchen Sie es später erneut.');
+        }
+      },
+      complete: () => {
+        // Reset loading state when the request is complete
+        this.order.setLoading(false);
       }
     });
   }
