@@ -2,5 +2,5 @@ import { InjectionToken, isDevMode } from '@angular/core';
 
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL', {
   providedIn: 'root',
-  factory: () => (isDevMode() ? 'http://localhost:8080' : 'https://your-prod-api.example.com'),
+  factory: () => (isDevMode() ? 'http://localhost:8080/api' : 'https://your-prod-api.example.com/api'),
 });

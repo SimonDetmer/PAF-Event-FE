@@ -1,10 +1,9 @@
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { API_BASE_URL } from '../api.config';
 import { AuthService } from '../auth.service';
+import { UserService } from '../user.service';
 
 @Component({
   selector: 'app-user-login',
@@ -19,33 +18,63 @@ export class UserLoginComponent {
   error: string = '';
 
   constructor(
-    private http: HttpClient,
     private router: Router,
-    @Inject(API_BASE_URL) private readonly apiBase: string,
     private auth: AuthService,
+    private userService: UserService
   ) {}
 
   login(): void {
     this.error = '';
-    if (!this.email || !this.email.includes('@')) {
-      this.error = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
+    this.loading = true;
+    
+    // Basic validation
+    if (!this.email) {
+      this.error = 'Bitte geben Sie eine E-Mail-Adresse ein.';
+      this.loading = false;
       return;
     }
-    this.loading = true;
-    this.http.get<boolean>(`${this.apiBase}/users/email/${encodeURIComponent(this.email)}`).subscribe({
-      next: (exists) => {
-        if (exists) {
-          // Persist mock session and navigate to dashboard
-          this.auth.loginWithRole('customer', this.email);
+    
+    if (!this.email.includes('@')) {
+      this.error = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
+      this.loading = false;
+      return;
+    }
+    
+    console.log('Attempting login with email:', this.email);
+    
+    this.userService.getUserByEmail(this.email).subscribe({
+      next: (user) => {
+        try {
+          console.log('User found, logging in...', user);
+          this.auth.login(user);
+          console.log('Login successful, navigating to dashboard...');
           this.router.navigate(['/dashboard']);
-        } else {
-          this.error = 'Kein Benutzer mit dieser E-Mail gefunden. Bitte legen Sie einen Benutzer an.';
+        } catch (error) {
+          console.error('Login error:', error);
+          this.error = 'Anmeldung fehlgeschlagen. Bitte versuchen Sie es später erneut.';
+          this.loading = false;
         }
       },
-      error: () => {
-        this.error = 'Anmeldung nicht möglich. Bitte versuchen Sie es später erneut.';
+      error: (error) => {
+        console.error('Login API error:', error);
+        
+        // Handle different error cases
+        if (error.status === 0) {
+          this.error = 'Verbindung zum Server fehlgeschlagen. Bitte überprüfen Sie Ihre Internetverbindung.';
+        } else if (error.status === 404 || error.message === 'User not found' || error.message.includes('nicht gefunden')) {
+          this.error = 'Kein Benutzer mit dieser E-Mail gefunden. Bitte legen Sie einen Benutzer an.';
+        } else if (error.status === 401) {
+          this.error = 'Ungültige Anmeldedaten. Bitte überprüfen Sie Ihre E-Mail und versuchen Sie es erneut.';
+        } else {
+          this.error = error.message || 'Anmeldung nicht möglich. Bitte versuchen Sie es später erneut.';
+        }
+        
+        this.loading = false;
       },
-      complete: () => (this.loading = false)
+      complete: () => {
+        console.log('Login process completed');
+        this.loading = false;
+      }
     });
   }
 

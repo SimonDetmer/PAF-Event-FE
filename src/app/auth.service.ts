@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
+import { User } from './user.service';
 
 interface SessionData {
   token: string;
+  userId: number;
   role: 'eventmanager' | 'customer' | '';
   email?: string;
 }
@@ -32,6 +34,10 @@ export class AuthService {
     return this.read()?.token ?? null;
   }
 
+  getUserId(): number | null {
+    return this.read()?.userId ?? null;
+  }
+
   getRole(): 'eventmanager' | 'customer' | '' {
     return this.read()?.role ?? '';
   }
@@ -40,13 +46,34 @@ export class AuthService {
     return this.read()?.email ?? undefined;
   }
 
-  loginWithRole(role: 'eventmanager' | 'customer', email?: string): void {
-    // mock token
-    const token = `mock-${role}-${Date.now()}`;
-    this.write({ token, role, email });
+  login(user: User): void {
+    const token = `jwt.${btoa(JSON.stringify({ 
+      sub: user.id, 
+      email: user.email,
+      role: user.role,
+      iat: Math.floor(Date.now() / 1000)
+    }))}.signature`;
+    
+    this.write({ 
+      token, 
+      userId: user.id,
+      role: user.role, 
+      email: user.email 
+    });
   }
 
   logout(): void {
     localStorage.removeItem(SESSION_KEY);
+  }
+  
+  getCurrentUser(): { id: number; email: string; role: string } | null {
+    const session = this.read();
+    if (!session) return null;
+    
+    return {
+      id: session.userId,
+      email: session.email || '',
+      role: session.role
+    };
   }
 }
