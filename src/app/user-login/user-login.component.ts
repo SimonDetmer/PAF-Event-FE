@@ -1,14 +1,37 @@
-import { Component, Inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../auth.service';
+import { finalize } from 'rxjs/operators';
+
+// Services
+import { AuthService, User } from '../auth.service';
 import { UserService } from '../user.service';
+
+// Material Modules
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-user-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule, 
+    FormsModule,
+    ReactiveFormsModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule
+  ],
   templateUrl: './user-login.component.html',
   styleUrls: ['./user-login.component.css']
 })
@@ -20,7 +43,8 @@ export class UserLoginComponent {
   constructor(
     private router: Router,
     private auth: AuthService,
-    private userService: UserService
+    private userService: UserService,
+    private snackBar: MatSnackBar
   ) {}
 
   login(): void {
@@ -33,53 +57,48 @@ export class UserLoginComponent {
       this.loading = false;
       return;
     }
-    
-    if (!this.email.includes('@')) {
-      this.error = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
-      this.loading = false;
-      return;
-    }
-    
-    console.log('Attempting login with email:', this.email);
-    
-    this.userService.getUserByEmail(this.email).subscribe({
-      next: (user) => {
-        try {
-          console.log('User found, logging in...', user);
-          this.auth.login(user);
-          console.log('Login successful, navigating to dashboard...');
-          this.router.navigate(['/dashboard']);
-        } catch (error) {
+
+    // In a real app, you would call your backend to authenticate
+    this.userService.getUserByEmail(this.email)
+      .pipe(
+        finalize(() => this.loading = false)
+      )
+      .subscribe({
+        next: (user) => {
+          // In a real app, you would get a real token from your backend
+          const mockToken = `mock-jwt-token-${Date.now()}`;
+          this.snackBar.open('Erfolgreich angemeldet', 'OK', { 
+            duration: 3000,
+            panelClass: ['success-snackbar']
+          });
+          this.auth.login(user, mockToken);
+        },
+        error: (error) => {
           console.error('Login error:', error);
-          this.error = 'Anmeldung fehlgeschlagen. Bitte versuchen Sie es später erneut.';
-          this.loading = false;
+          
+          let errorMessage = 'Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.';
+          
+          if (error.status === 404) {
+            errorMessage = 'Kein Benutzer mit dieser E-Mail gefunden. Bitte legen Sie einen Benutzer an.';
+          } else if (error.status === 401) {
+            errorMessage = 'Ungültige Anmeldedaten. Bitte überprüfen Sie Ihre E-Mail und versuchen Sie es erneut.';
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
+          this.error = errorMessage;
+          this.snackBar.open(errorMessage, 'OK', { 
+            duration: 5000, 
+            panelClass: ['error-snackbar'] 
+          });
         }
-      },
-      error: (error) => {
-        console.error('Login API error:', error);
-        
-        // Handle different error cases
-        if (error.status === 0) {
-          this.error = 'Verbindung zum Server fehlgeschlagen. Bitte überprüfen Sie Ihre Internetverbindung.';
-        } else if (error.status === 404 || error.message === 'User not found' || error.message.includes('nicht gefunden')) {
-          this.error = 'Kein Benutzer mit dieser E-Mail gefunden. Bitte legen Sie einen Benutzer an.';
-        } else if (error.status === 401) {
-          this.error = 'Ungültige Anmeldedaten. Bitte überprüfen Sie Ihre E-Mail und versuchen Sie es erneut.';
-        } else {
-          this.error = error.message || 'Anmeldung nicht möglich. Bitte versuchen Sie es später erneut.';
-        }
-        
-        this.loading = false;
-      },
-      complete: () => {
-        console.log('Login process completed');
-        this.loading = false;
-      }
-    });
+      });
   }
 
-  createUser(): void {
-    this.router.navigate(['/create-user']);
+  goToCreateUser(): void {
+    this.router.navigate(['/create-user'], {
+      state: { email: this.email }
+    });
   }
 
   cancel(): void {

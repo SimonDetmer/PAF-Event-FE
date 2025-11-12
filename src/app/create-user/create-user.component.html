@@ -1,23 +1,80 @@
-<div class="max-w-md mx-auto p-4 space-y-4">
-  <h2 class="text-2xl font-semibold">Benutzer anlegen</h2>
+<div class="create-user-container">
+  <mat-card class="create-user-card">
+    <mat-card-header>
+      <mat-card-title>Benutzer anlegen</mat-card-title>
+      <mat-card-subtitle>Erstellen Sie ein neues Benutzerkonto</mat-card-subtitle>
+    </mat-card-header>
 
-  <div>
-    <label class="block font-medium mb-1">Rolle wählen</label>
-    <label class="mr-4">
-      <input type="radio" name="role" [(ngModel)]="selectedRole" value="eventmanager"> Eventmanager
-    </label>
-    <label>
-      <input type="radio" name="role" [(ngModel)]="selectedRole" value="customer"> Customer
-    </label>
-  </div>
+    <mat-card-content>
+      <form (ngSubmit)="createUser()" class="create-user-form">
+        <div class="form-section">
+          <h3 class="section-title">Rolle auswählen</h3>
+          <mat-radio-group [(ngModel)]="selectedRole" name="role" class="role-selection">
+            <mat-radio-button value="eventmanager" class="role-option">
+              <mat-icon>event</mat-icon>
+              <div class="role-details">
+                <span class="role-title">Eventmanager</span>
+                <span class="role-description">Erstellen und verwalten Sie Veranstaltungen</span>
+              </div>
+            </mat-radio-button>
+            
+            <mat-radio-button value="customer" class="role-option">
+              <mat-icon>person</mat-icon>
+              <div class="role-details">
+                <span class="role-title">Kunde</span>
+                <span class="role-description">Buchen Sie Tickets für Veranstaltungen</span>
+              </div>
+            </mat-radio-button>
+          </mat-radio-group>
+        </div>
 
-  <div>
-    <label for="email" class="block font-medium mb-1">E-Mail</label>
-    <input id="email" type="email" [(ngModel)]="email" name="email" class="w-full border rounded px-3 py-2" required>
-  </div>
+        <div class="form-section">
+          <h3 class="section-title">Kontoinformationen</h3>
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>E-Mail</mat-label>
+            <input 
+              matInput 
+              type="email" 
+              [(ngModel)]="email" 
+              name="email" 
+              required
+              placeholder="Ihre E-Mail-Adresse"
+              autocomplete="email"
+            >
+            <mat-icon matSuffix>email</mat-icon>
+          </mat-form-field>
+        </div>
 
-  <div class="space-x-2">
-    <button mat-flat-button color="primary" (click)="createUser()" [disabled]="loading">Benutzer anlegen</button>
-    <button mat-stroked-button (click)="cancel()" [disabled]="loading">Abbrechen</button>
-  </div>
+        <div *ngIf="error" class="error-message">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ error }}</span>
+        </div>
+
+        <div class="button-group">
+          <button 
+            mat-raised-button 
+            color="primary" 
+            type="submit" 
+            [disabled]="loading"
+            class="action-button"
+          >
+            <mat-icon *ngIf="!loading">person_add</mat-icon>
+            <mat-spinner *ngIf="loading" diameter="20"></mat-spinner>
+            <span>Benutzer anlegen</span>
+          </button>
+          
+          <button 
+            mat-button 
+            type="button" 
+            (click)="cancel()" 
+            [disabled]="loading"
+            class="action-button"
+          >
+            <mat-icon>arrow_back</mat-icon>
+            <span>Abbrechen</span>
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
 </div>

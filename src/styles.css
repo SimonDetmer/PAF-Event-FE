@@ -23,6 +23,25 @@
   --radius-xl: 1rem;
 }
 
+/* Snackbar Styles */
+.snackbar-success {
+  background-color: #10b981; /* emerald-500 */
+  color: white;
+}
+
+.snackbar-error {
+  background-color: #ef4444; /* red-500 */
+  color: white;
+}
+
+.snackbar-success .mat-simple-snackbar-action {
+  color: white;
+}
+
+.snackbar-error .mat-simple-snackbar-action {
+  color: white;
+}
+
 .dark :root {
   --color-bg: 17 24 39; /* gray-900 */
   --color-fg: 243 244 246; /* gray-100 */

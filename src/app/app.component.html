@@ -4,11 +4,22 @@
   </button>
   <span class="pl-2 font-medium">Event MFE</span>
   <span class="flex-1"></span>
-  <span class="mr-4 text-sm opacity-90" *ngIf="auth.isAuthenticated() && userRole">
-    Eingeloggt als: <strong>{{ userRole }}</strong>
-    <ng-container *ngIf="userEmail">({{ userEmail }})</ng-container>
-  </span>
-  <button *ngIf="auth.isAuthenticated()" mat-stroked-button color="warn" (click)="logout()" aria-label="Logout">Logout</button>
+  <div class="flex items-center gap-4">
+    <span class="text-sm opacity-90" *ngIf="auth.isAuthenticated() && currentUser">
+      Eingeloggt als: <strong>{{ currentUser.email }}</strong>
+    </span>
+    <button 
+      *ngIf="auth.isAuthenticated()" 
+      mat-stroked-button 
+      color="warn" 
+      (click)="logout()" 
+      aria-label="Logout"
+      class="!border-2 !border-opacity-50 hover:!bg-red-50 hover:!bg-opacity-10"
+    >
+      <mat-icon class="mr-1">logout</mat-icon>
+      Abmelden
+    </button>
+  </div>
 </mat-toolbar>
 
 <mat-sidenav-container style="height: calc(100vh - 64px);">

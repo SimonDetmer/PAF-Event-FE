@@ -1,79 +1,96 @@
 import { Injectable } from '@angular/core';
-import { User } from './user.service';
+import { Router } from '@angular/router';
+import { BehaviorSubject, Observable } from 'rxjs';
 
-interface SessionData {
-  token: string;
-  userId: number;
-  role: 'eventmanager' | 'customer' | '';
-  email?: string;
+export interface User {
+  id: number;
+  email: string;
+  role: 'eventmanager' | 'customer';
+  firstName?: string;
+  lastName?: string;
 }
 
-const SESSION_KEY = 'session';
+interface SessionData {
+  user: User;
+  token: string;
+  expiresAt: number;
+}
+
+const SESSION_KEY = 'event_app_session';
+const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private read(): SessionData | null {
+  private currentUserSubject: BehaviorSubject<User | null>;
+  public currentUser$: Observable<User | null>;
+
+  constructor(private router: Router) {
+    // Initialize with user from localStorage if available
+    const session = this.getSession();
+    this.currentUserSubject = new BehaviorSubject<User | null>(session?.user || null);
+    this.currentUser$ = this.currentUserSubject.asObservable();
+  }
+
+  private getSession(): SessionData | null {
     try {
-      const raw = localStorage.getItem(SESSION_KEY);
-      return raw ? JSON.parse(raw) as SessionData : null;
-    } catch {
+      const session = localStorage.getItem(SESSION_KEY);
+      if (!session) return null;
+
+      const data: SessionData = JSON.parse(session);
+      
+      // Check if session is expired
+      if (data.expiresAt < Date.now()) {
+        this.clearSession();
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error reading session:', error);
+      this.clearSession();
       return null;
     }
   }
 
-  private write(data: SessionData): void {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+  private setSession(user: User, token: string): void {
+    const session: SessionData = {
+      user,
+      token,
+      expiresAt: Date.now() + SESSION_DURATION
+    };
+    
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    this.currentUserSubject.next(user);
   }
 
   isAuthenticated(): boolean {
-    const s = this.read();
-    return !!(s && s.token);
+    return !!this.getCurrentUser();
+  }
+
+  getCurrentUser(): User | null {
+    return this.currentUserSubject.value;
   }
 
   getToken(): string | null {
-    return this.read()?.token ?? null;
+    const session = this.getSession();
+    return session?.token || null;
   }
 
-  getUserId(): number | null {
-    return this.read()?.userId ?? null;
-  }
-
-  getRole(): 'eventmanager' | 'customer' | '' {
-    return this.read()?.role ?? '';
-  }
-
-  getEmail(): string | undefined {
-    return this.read()?.email ?? undefined;
-  }
-
-  login(user: User): void {
-    const token = `jwt.${btoa(JSON.stringify({ 
-      sub: user.id, 
-      email: user.email,
-      role: user.role,
-      iat: Math.floor(Date.now() / 1000)
-    }))}.signature`;
-    
-    this.write({ 
-      token, 
-      userId: user.id,
-      role: user.role, 
-      email: user.email 
+  login(user: User, token: string): void {
+    this.setSession(user, token);
+    this.router.navigate(['/event-overview']).then(() => {
+      // Force a reload of the app component to ensure the UI updates
+      window.location.reload();
     });
   }
 
   logout(): void {
-    localStorage.removeItem(SESSION_KEY);
+    this.clearSession();
+    this.router.navigate(['/login']);
   }
-  
-  getCurrentUser(): { id: number; email: string; role: string } | null {
-    const session = this.read();
-    if (!session) return null;
-    
-    return {
-      id: session.userId,
-      email: session.email || '',
-      role: session.role
-    };
+
+  private clearSession(): void {
+    localStorage.removeItem(SESSION_KEY);
+    this.currentUserSubject.next(null);
   }
 }

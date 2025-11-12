@@ -9,9 +9,9 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { OrderService } from './order.service';
-import { AuthService } from './auth.service';
-import { UserService, User } from './user.service';
+import { AuthService, User } from './auth.service';
 import { LoadingSpinnerComponent } from './shared/loading-spinner/loading-spinner.component';
 import { Subscription } from 'rxjs';
 
@@ -28,6 +28,7 @@ import { Subscription } from 'rxjs';
     MatListModule, 
     MatBadgeModule,
     MatProgressSpinnerModule,
+    MatSnackBarModule,
     LoadingSpinnerComponent
   ],
   templateUrl: './app.component.html',
@@ -43,8 +44,7 @@ export class AppComponent implements OnInit, OnDestroy {
     @Inject(DOCUMENT) private readonly document: Document, 
     private router: Router, 
     public order: OrderService, 
-    public auth: AuthService,
-    private userService: UserService
+    public auth: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -57,24 +57,19 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     this.applyDarkClass();
 
-    // Subscribe to user changes
-    this.userSubscription = this.userService.currentUser$.subscribe(user => {
+    // Get initial user state
+    this.currentUser = this.auth.getCurrentUser();
+    
+    // Subscribe to auth state changes
+    this.userSubscription = this.auth.currentUser$.subscribe(user => {
       this.currentUser = user;
-    });
-
-    // Load current user if authenticated
-    if (this.auth.isAuthenticated() && !this.currentUser) {
-      const userId = this.auth.getUserId();
-      if (userId) {
-        this.userService.getUserById(userId).subscribe({
-          error: (error) => {
-            console.error('Failed to load user data:', error);
-            // If we can't load the user, log them out
-            this.logout();
-          }
-        });
+      console.log('User state changed:', user);
+      
+      // If user is not authenticated and not already on login page, redirect to login
+      if (!user && !this.router.url.includes('/login')) {
+        this.router.navigate(['/login']);
       }
-    }
+    });
   }
 
   toggleDarkMode(): void {
@@ -104,18 +99,9 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    // Clear theme preference
-    localStorage.removeItem('theme');
+    this.auth.logout();
     this.dark = false;
     this.applyDarkClass();
-    this.sidenavOpen = false;
-    
-    // Clear auth and user data
-    this.auth.logout();
-    this.userService.clearUser();
-    
-    // Navigate to login
-    this.router.navigate(['/login']);
   }
 
   get orderCount(): number {
