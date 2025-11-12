@@ -43,7 +43,7 @@ export class AppComponent implements OnInit, OnDestroy {
     @Inject(DOCUMENT) private readonly document: Document, 
     private router: Router, 
     public order: OrderService, 
-    private auth: AuthService,
+    public auth: AuthService,
     private userService: UserService
   ) {}
 
