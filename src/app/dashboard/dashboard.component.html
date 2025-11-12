@@ -1,5 +1,5 @@
 <!-- Eventmanager-Ansicht -->
-<div *ngIf="userRole === 'eventmanager'; else customerView">
+<div *ngIf="user?.role === 'eventmanager'; else customerView">
   <h2 class="text-2xl font-semibold">Dashboard - Eventmanager</h2>
 
   <table mat-table [dataSource]="sortedEvents" class="mat-elevation-z1 w-full">
@@ -54,23 +54,15 @@
 <ng-template #customerView>
   <div>
     <h2 class="text-2xl font-semibold">Kundendashboard</h2>
-
-    <!-- Formular: Nur E-Mail eingeben -->
-    <form (ngSubmit)="loadCustomerData()">
-      <label for="customerEmail">E-Mail:</label>
-      <input type="email" id="customerEmail" [(ngModel)]="customerForm.email" name="email" required>
-      <br>
-      <button mat-flat-button color="primary" type="submit">Daten laden</button>
-    </form>
+    <h3>Willkommen, {{ user?.email }}!</h3>
 
     <!-- Fehlermeldung -->
     <div *ngIf="errorMessage">
       <p style="color:red;">{{ errorMessage }}</p>
     </div>
 
-    <!-- Anzeige, falls ein Kunde gefunden wurde -->
-    <div *ngIf="customerUser">
-      <h3>Willkommen, {{ customerUser.email }}!</h3>
+    <!-- Anzeige der Ticketkäufe -->
+    <div>
       <h4>Ihre Ticketkäufe:</h4>
 
       <table mat-table [dataSource]="customerEvents" class="mat-elevation-z1 w-full">

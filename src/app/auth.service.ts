@@ -64,7 +64,13 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return !!this.getCurrentUser();
+    const session = this.getSession();
+    if (session) {
+      // Update the current user from session
+      this.currentUserSubject.next(session.user);
+      return true;
+    }
+    return false;
   }
 
   getCurrentUser(): User | null {
@@ -78,10 +84,13 @@ export class AuthService {
 
   login(user: User, token: string): void {
     this.setSession(user, token);
-    this.router.navigate(['/event-overview']).then(() => {
-      // Force a reload of the app component to ensure the UI updates
-      window.location.reload();
-    });
+    
+    // Navigate based on user role
+    if (user.role === 'eventmanager') {
+      this.router.navigate(['/event-overview']);
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
   }
 
   logout(): void {

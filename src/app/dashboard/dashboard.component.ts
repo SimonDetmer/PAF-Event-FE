@@ -1,13 +1,14 @@
-import { Component, OnInit, Inject } from '@angular/core';
+import { Component, OnInit, Inject, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
-import {ReportComponent} from '../report/report.component';
+import { forkJoin, Subject, takeUntil } from 'rxjs';
+import { ReportComponent } from '../report/report.component';
 import { API_BASE_URL } from '../api.config';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
+import { AuthService, User } from '../auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -17,7 +18,8 @@ import { MatTableModule } from '@angular/material/table';
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
-  userRole: string | null = null;
+  user: User | null = null;
+  private destroy$ = new Subject<void>();
   events: any[] = [];
   tickets: any[] = [];
   sortedEvents: any[] = [];
@@ -34,26 +36,31 @@ export class DashboardComponent implements OnInit {
     private http: HttpClient,
     private route: ActivatedRoute,
     private router: Router,
+    private auth: AuthService,
     @Inject(API_BASE_URL) private readonly apiBase: string,
-  ) {
-    this.route.queryParams.subscribe(params => {
-      this.userRole = params['role'] || 'Unbekannt';
-    });
-  }
+  ) {}
 
   ngOnInit(): void {
-    if (this.userRole === 'eventmanager') {
-      this.loadData();
-    } else {
-      // If an email is provided via query params, prefill and load
-      this.route.queryParams.subscribe(params => {
-        const qpEmail = params['email'];
-        if (qpEmail) {
-          this.customerForm.email = String(qpEmail);
-          this.loadCustomerData();
+    this.auth.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        this.user = user;
+        if (user) {
+          this.customerForm.email = user.email;
+          if (user.role === 'eventmanager') {
+            this.loadData();
+          } else {
+            this.loadCustomerData();
+          }
+        } else {
+          this.router.navigate(['/login']);
         }
       });
-    }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadData(): void {
@@ -89,25 +96,33 @@ export class DashboardComponent implements OnInit {
 
   loadCustomerData(): void {
     this.errorMessage = '';
-    this.customerUser = null;
+    this.customerUser = this.user; // Use the authenticated user
     this.customerOrders = [];
     this.customerEvents = [];
 
-    // Suche den Kunden ausschließlich anhand der E-Mail
+    if (!this.user) {
+      this.errorMessage = 'Kein Benutzer angemeldet.';
+      return;
+    }
+
+    // Load user data including orders
     this.http.get<any[]>(`${this.apiBase}/users`).subscribe(users => {
-      const foundUser = users.find(u =>
-        String(u.email ?? '').trim().toLowerCase() === String(this.customerForm.email ?? '').trim().toLowerCase()
+      const foundUser = users.find(u => 
+        String(u.email ?? '').trim().toLowerCase() === String(this.user?.email ?? '').trim().toLowerCase()
       );
+      
       if (!foundUser) {
-        this.errorMessage = 'Kein Benutzer gefunden. Bitte überprüfen Sie Ihre Eingaben oder registrieren Sie sich.';
+        this.errorMessage = 'Benutzerdaten konnten nicht geladen werden.';
         return;
       }
+      
       this.customerUser = foundUser;
+      
       if (foundUser.orders && foundUser.orders.length) {
         this.customerOrders = foundUser.orders;
         this.loadEventsAndProcessOrders();
       } else {
-        this.errorMessage = 'Für diesen Benutzer wurden keine Orders gefunden.';
+        this.errorMessage = 'Keine Bestellungen für diesen Benutzer gefunden.';
       }
     }, () => {
       this.errorMessage = 'Fehler beim Laden der Benutzerdaten.';

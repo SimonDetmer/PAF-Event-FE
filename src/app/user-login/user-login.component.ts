@@ -48,9 +48,8 @@ export class UserLoginComponent {
           console.log('User found, logging in...', user);
           // Generate a mock token for the user
           const mockToken = `mock-jwt-token-${Date.now()}`;
+          // The login method will handle the navigation
           this.auth.login(user, mockToken);
-          console.log('Login successful, navigating to dashboard...');
-          this.router.navigate(['/dashboard']);
         } catch (error) {
           console.error('Login error:', error);
           this.error = 'Anmeldung fehlgeschlagen. Bitte versuchen Sie es später erneut.';
