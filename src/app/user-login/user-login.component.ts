@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -46,7 +46,9 @@ export class UserLoginComponent {
       next: (user) => {
         try {
           console.log('User found, logging in...', user);
-          this.auth.login(user);
+          // Generate a mock token for the user
+          const mockToken = `mock-jwt-token-${Date.now()}`;
+          this.auth.login(user, mockToken);
           console.log('Login successful, navigating to dashboard...');
           this.router.navigate(['/dashboard']);
         } catch (error) {
