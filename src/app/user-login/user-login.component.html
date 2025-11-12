@@ -1,16 +1,66 @@
-<div class="max-w-md mx-auto p-4 space-y-4">
-  <h2>Anmelden</h2>
+<div class="login-container">
+  <mat-card class="login-card">
+    <mat-card-header>
+      <mat-card-title>Anmelden</mat-card-title>
+      <mat-card-subtitle>Bitte geben Sie Ihre E-Mail-Adresse ein</mat-card-subtitle>
+    </mat-card-header>
 
-  <div>
-    <label for="email" class="block font-medium mb-1">E-Mail</label>
-    <input id="email" type="email" [(ngModel)]="email" name="email" class="w-full border rounded px-3 py-2" required>
-  </div>
+    <mat-card-content>
+      <form (ngSubmit)="login()" class="login-form">
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>E-Mail</mat-label>
+          <input 
+            matInput 
+            type="email" 
+            [(ngModel)]="email" 
+            name="email" 
+            required
+            placeholder="Ihre E-Mail-Adresse"
+            autocomplete="email"
+          >
+          <mat-icon matSuffix>email</mat-icon>
+        </mat-form-field>
 
-  <div *ngIf="error" class="text-red-600">{{ error }}</div>
+        <div *ngIf="error" class="error-message">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ error }}</span>
+        </div>
 
-  <div class="space-x-2">
-    <button (click)="login()" [disabled]="loading">Login</button>
-    <button (click)="createUser()" [disabled]="loading">Benutzer anlegen</button>
-    <button (click)="cancel()" [disabled]="loading">Abbrechen</button>
-  </div>
+        <div class="button-group">
+          <button 
+            mat-raised-button 
+            color="primary" 
+            type="submit" 
+            [disabled]="loading"
+            class="action-button"
+          >
+            <mat-icon>login</mat-icon>
+            <span>Anmelden</span>
+          </button>
+          
+          <button 
+            mat-stroked-button 
+            type="button" 
+            (click)="createUser()" 
+            [disabled]="loading"
+            class="action-button"
+          >
+            <mat-icon>person_add</mat-icon>
+            <span>Benutzer anlegen</span>
+          </button>
+          
+          <button 
+            mat-button 
+            type="button" 
+            (click)="cancel()" 
+            [disabled]="loading"
+            class="action-button"
+          >
+            <mat-icon>arrow_back</mat-icon>
+            <span>Zurück</span>
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
 </div>
