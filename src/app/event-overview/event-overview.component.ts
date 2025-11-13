@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '../api.config';
-import { Component, OnInit, OnDestroy, Inject, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject, ViewEncapsulation, Injectable } from '@angular/core';
+// Remove AuthService import as we'll get it from the auth module
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule, NgForOf, NgIf } from '@angular/common';
@@ -43,8 +44,17 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   locations: any[] = [];
   tickets: any[] = [];
   userRole: string | null = null;
+  userEmail: string = '';
 
-  newEvent = { title: '', locationId: null as number | null, eventDateTime: '', eventDate: '', eventTime: '' };
+  newEvent = { 
+    title: '', 
+    locationId: null as number | null, 
+    eventDateTime: '', 
+    eventDate: '', 
+    eventTime: '',
+    ticketPrice: null as number | null,
+    ticketQuantity: 1
+  };
   newLocation = { street: '', geoX: null, geoY: null, capacity: null };
   newTicket = { eventId: null, price: null };
 
@@ -59,12 +69,27 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
     private router: Router,
     @Inject(API_BASE_URL) private readonly apiBase: string,
     private order: OrderService,
+    // Remove AuthService injection as it's not available
   ) {}
 
   ngOnInit(): void {
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       this.userRole = params['role'] || 'Unbekannt';
     });
+    
+    // Get user email from localStorage as fallback
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        this.userEmail = user.email || 'Unbekannt';
+      } catch (e) {
+        this.userEmail = 'Unbekannt';
+      }
+    } else {
+      this.userEmail = 'Unbekannt';
+    }
+    
     this.fetchData();
     this.fetchLocations();
     this.fetchTickets();
@@ -108,58 +133,42 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
     });
   }
 
-  toggleEventSelection(eventId: number, isChecked: boolean): void {
-    // Kept for compatibility if used elsewhere; selection now primarily uses selectedMap via ngModel
-    this.selectedMap[eventId] = isChecked;
-    if (isChecked && !this.selectedTicketCounts[eventId]) {
-      this.selectedTicketCounts[eventId] = 1;
-    }
+  updateTicketCount(eventId: number, count: string | number): void {
+    const numCount = typeof count === 'string' ? parseInt(count, 10) : count;
+    this.selectedTicketCounts[eventId] = !isNaN(numCount) && numCount > 0 ? numCount : 0;
+  }
+
+  hasSelectedTickets(): boolean {
+    return Object.values(this.selectedTicketCounts).some(count => count > 0);
   }
 
   addToCart(): void {
-    const selectedEvents = this.data.filter((event: any) => !!this.selectedMap[event.id]);
+    // Get all events with ticket count > 0
+    const selectedEvents = this.data.filter((event: any) => {
+      const count = this.selectedTicketCounts[event.id] || 0;
+      return count > 0;
+    });
+    
     if (selectedEvents.length === 0) {
-      alert('Bitte wählen Sie mindestens ein Event aus.');
+      alert('Bitte wählen Sie mindestens ein Event mit einer Ticketanzahl > 0 aus.');
       return;
     }
     
-    selectedEvents.forEach((event: any) => {
-      const matchingTicket = this.tickets.find(t => t.event && t.event.id === event.id);
-      const price = matchingTicket ? matchingTicket.price : (event.tickets?.[0]?.price ?? 0);
-      const qty = this.selectedTicketCounts[event.id] || 1;
+    let hasErrors = false;
+    
+    // First validate all selections
+    for (const event of selectedEvents) {
+      const qty = this.selectedTicketCounts[event.id] || 0;
       
       if (qty <= 0) {
-        alert(`Ungültige Anzahl von Tickets für ${event.title}`);
-        return;
+        continue; // Skip if somehow count is 0 or negative
       }
       
       if (qty > event.availableTickets) {
         alert(`Nicht genügend Tickets verfügbar für ${event.title}. Verfügbar: ${event.availableTickets}`);
-        return;
+        hasErrors = true;
+        break;
       }
-      
-      if (price != null) {
-        this.order.addItem({
-          eventId: event.id,
-          title: event.title,
-          price,
-          quantity: qty,
-          version: event.version || 1,
-          availableTickets: event.availableTickets - qty
-        });
-        console.log('Added to order:', { 
-          eventId: event.id, 
-          title: event.title, 
-          price, 
-          quantity: qty,
-          version: event.version,
-          availableTickets: event.availableTickets - qty
-        });
-      }
-    });
-    
-    if (this.order.getItems().length > 0) {
-      // Clear selections
       this.selectedEventIds = [];
       this.selectedMap = {};
       
@@ -182,26 +191,54 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
     this.fetchData();
   }
 
+  resetEventForm(): void {
+    this.newEvent = { 
+      title: '', 
+      locationId: null, 
+      eventDateTime: '', 
+      eventDate: '', 
+      eventTime: '',
+      ticketPrice: null,
+      ticketQuantity: 1
+    };
+  }
+
   createEvent(): void {
-    if (!this.newEvent.title || !this.newEvent.locationId || !this.newEvent.eventDate || !this.newEvent.eventTime) {
+    if (!this.newEvent.title || !this.newEvent.locationId || !this.newEvent.eventDate || 
+        !this.newEvent.eventTime || this.newEvent.ticketPrice === null || this.newEvent.ticketQuantity === null) {
       alert('Bitte füllen Sie alle Felder aus.');
       return;
     }
+    
+    if (this.newEvent.ticketPrice < 0) {
+      alert('Der Ticketpreis darf nicht negativ sein.');
+      return;
+    }
+    
+    if (this.newEvent.ticketQuantity <= 0) {
+      alert('Die Anzahl der Tickets muss mindestens 1 sein.');
+      return;
+    }
+    
     const combinedDateTime = `${this.newEvent.eventDate}T${this.newEvent.eventTime}:00`;
     const eventData = {
       title: this.newEvent.title,
       location: { id: this.newEvent.locationId },
-      eventDateTime: combinedDateTime
+      eventDateTime: combinedDateTime,
+      ticketPrice: this.newEvent.ticketPrice,
+      ticketQuantity: this.newEvent.ticketQuantity
     };
+    
+    // Create the event and tickets in one go
     this.http.post(`${this.apiBase}/events`, eventData).subscribe({
       next: () => {
-        alert('Event erfolgreich hinzugefügt!');
+        alert('Event und Tickets erfolgreich erstellt!');
         this.fetchData();
-        this.newEvent = { title: '', locationId: null, eventDateTime: '', eventDate: '', eventTime: '' };
+        this.resetEventForm();
       },
-      error: error => {
+      error: (error: any) => {
         console.error('Fehler beim Erstellen des Events:', error);
-        alert('Event konnte nicht hinzugefügt werden.');
+        alert('Fehler beim Erstellen des Events: ' + (error.error?.message || 'Unbekannter Fehler'));
       }
     });
   }
@@ -242,26 +279,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   }
 
   createTicket(): void {
-    if (!this.newTicket.eventId || this.newTicket.price === null) {
-      alert('Bitte wählen Sie ein Event und geben Sie einen Preis ein.');
-      return;
-    }
-    const ticketData = {
-      price: this.newTicket.price,
-      event: { id: this.newTicket.eventId }
-    };
-    this.http.post(`${this.apiBase}/tickets`, ticketData).subscribe({
-      next: (createdTicket: any) => { // Backend liefert das erstellte Ticket zurück
-        alert('Ticket erfolgreich erstellt!');
-        this.tickets.push(createdTicket); // Direktes Aktualisieren der Ticketliste
-        this.newTicket = { eventId: null, price: null };
-        console.log(this.tickets);
-      },
-      error: error => {
-        console.error('Fehler beim Erstellen des Tickets:', error);
-        alert('Ticket konnte nicht erstellt werden.');
-      }
-    });
+    alert('Tickets werden jetzt direkt beim Erstellen des Events hinzugefügt. Bitte verwenden Sie das Event-Formular.');
   }
 
   getChecked(domEvent: any): boolean {

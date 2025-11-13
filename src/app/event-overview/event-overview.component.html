@@ -1,6 +1,6 @@
 <div class="space-y-6">
   <h2 class="text-2xl font-semibold">Event Overview</h2>
-  <p>Willkommen! Sie sind angemeldet als: <strong>{{ userRole }}</strong></p>
+  <p>Willkommen! Sie sind angemeldet als: <strong>{{ userEmail }}</strong> ({{ userRole }})</p>
 
   <div *ngIf="userRole === 'eventmanager'" class="space-y-6">
     <mat-card appearance="outlined">
@@ -35,8 +35,22 @@
             <mat-error *ngIf="eventTimeCtrl.errors?.['required']">Uhrzeit ist erforderlich.</mat-error>
           </mat-form-field>
 
+          <mat-form-field appearance="outline" class="md:col-span-1 w-full">
+            <mat-label>Ticketpreis (€)</mat-label>
+            <input matInput type="number" [(ngModel)]="newEvent.ticketPrice" name="ticketPrice" required min="0" step="0.01" #ticketPriceCtrl="ngModel">
+            <mat-error *ngIf="ticketPriceCtrl.errors?.['required']">Ticketpreis ist erforderlich</mat-error>
+            <mat-error *ngIf="ticketPriceCtrl.errors?.['min']">Preis darf nicht negativ sein</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="md:col-span-1 w-full">
+            <mat-label>Anzahl Tickets</mat-label>
+            <input matInput type="number" [(ngModel)]="newEvent.ticketQuantity" name="ticketQuantity" required min="1" #ticketQuantityCtrl="ngModel">
+            <mat-error *ngIf="ticketQuantityCtrl.errors?.['required']">Anzahl ist erforderlich</mat-error>
+            <mat-error *ngIf="ticketQuantityCtrl.errors?.['min']">Mindestens 1 Ticket erforderlich</mat-error>
+          </mat-form-field>
+
           <div class="md:col-span-3">
-            <button mat-flat-button color="primary" type="submit">Event hinzufügen</button>
+            <button mat-flat-button color="primary" type="submit">Event und Tickets erstellen</button>
           </div>
         </form>
       </mat-card-content>
@@ -113,27 +127,53 @@
     <mat-card-content>
       <div *ngIf="data && data.length > 0; else loading" class="space-y-2">
         <mat-nav-list>
-          <div mat-list-item *ngFor="let item of data">
-            <mat-checkbox [disabled]="(item?.availableTickets  < 0)"
-                          [(ngModel)]="selectedMap[item.id]"
-                          (ngModelChange)="toggleEventSelection(item.id, $event)"></mat-checkbox>
-            <div matListItemTitle>{{ item.title }}</div>
-            <div matListItemLine>{{ item.location?.street }} — {{ item?.eventDateTime | date:'dd.MM.yyyy HH:mm' }}</div>
-            <div matListItemLine class="text-sm text-gray-500 dark:text-gray-400">
-              Ticket Preis: {{ item.tickets[0].price }} · Kapazität: {{item.location?.capacity}} · Verfügbare Tickets: {{ item?.availableTickets > 0 ? item?.availableTickets : 'Keine Tickets mehr verfügbar' }}
+          <div mat-list-item *ngFor="let item of data" class="py-2 border-b border-gray-100">
+            <div class="w-full flex flex-col md:flex-row md:items-center gap-4">
+              <div class="flex-1">
+                <div matListItemTitle class="text-lg font-medium">{{ item.title }}</div>
+                <div matListItemLine class="text-gray-600">
+                  {{ item.location?.street }} — {{ item?.eventDateTime | date:'dd.MM.yyyy HH:mm' }}
+                </div>
+                <div matListItemLine class="text-sm text-gray-500">
+                  <span class="font-medium">{{ item.tickets[0]?.price | currency:'EUR' }}</span> · 
+                  Verfügbar: {{ item?.availableTickets > 0 ? item.availableTickets : 'Ausverkauft' }}
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-4 mt-2 md:mt-0">
+                <mat-form-field appearance="outline" class="w-32">
+                  <mat-label>Anzahl</mat-label>
+                  <input matInput 
+                         type="number" 
+                         min="0" 
+                         [max]="item.availableTickets"
+                         [value]="selectedTicketCounts[item.id] || 0" 
+                         (change)="updateTicketCount(item.id, $any($event).target.value)"
+                         [disabled]="item.availableTickets <= 0"
+                         class="text-right" />
+                  <mat-hint *ngIf="item.availableTickets > 0" align="end" class="text-xs">
+                    Max. {{ item.availableTickets }}
+                  </mat-hint>
+                </mat-form-field>
+                
+                <button mat-stroked-button 
+                        color="warn" 
+                        *ngIf="userRole === 'eventmanager'" 
+                        (click)="$event.stopPropagation(); deleteEvent(item.id)"
+                        class="ml-2">
+                  Löschen
+                </button>
+              </div>
             </div>
-            <div class="ml-4">
-              <mat-form-field appearance="outline" class="w-28">
-                <mat-label>Anzahl</mat-label>
-                <input matInput type="number" min="1" [ngModel]="selectedTicketCounts[item.id]" (ngModelChange)="selectedTicketCounts[item.id] = $event" />
-              </mat-form-field>
-            </div>
-            <span class="flex-1"></span>
-            <button mat-stroked-button color="warn" *ngIf="userRole === 'eventmanager'" (click)="deleteEvent(item.id)">Event löschen</button>
           </div>
         </mat-nav-list>
-        <div class="pt-2">
-          <button mat-flat-button color="primary" (click)="addToCart()">Add to cart</button>
+        <div class="pt-4 flex justify-end">
+          <button mat-flat-button 
+                  color="primary" 
+                  (click)="addToCart()"
+                  [disabled]="!hasSelectedTickets()">
+            Zum Warenkorb hinzufügen
+          </button>
         </div>
       </div>
     </mat-card-content>
