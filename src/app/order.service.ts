@@ -62,6 +62,15 @@ export class OrderService {
     this.items = [];
   }
 
+  async refreshItems(): Promise<void> {
+    // Clear the current items
+    this.clear();
+    
+    // You might want to add logic here to re-fetch the cart items from the server
+    // For now, we'll just clear the cart and let the user add items again
+    console.log('Cart items have been refreshed');
+  }
+
   setLoading(loading: boolean): void {
     this.loadingSubject.next(loading);
   }

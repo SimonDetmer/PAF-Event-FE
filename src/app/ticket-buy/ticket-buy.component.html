@@ -1,34 +1,56 @@
-<h2 class="text-2xl font-semibold">Cart</h2>
+<div class="p-4">
 
-<div *ngIf="items && items.length > 0; else emptyCart">
-  <div *ngFor="let it of items" class="mb-3">
-    <div><strong>{{ it.title }}</strong></div>
-    <div>Preis: {{ it.price }}</div>
-    <div>
-      Anzahl:
-      <input type="number" min="1" [ngModel]="it.quantity" (ngModelChange)="order.updateQuantity(it.eventId, $event)" />
-      <button mat-stroked-button color="warn" type="button" (click)="order.removeItem(it.eventId)">Entfernen</button>
+  <h2 class="text-xl font-semibold mb-4">Warenkorb</h2>
+
+  <div *ngIf="items.length > 0; else empty">
+    <div *ngFor="let it of items" class="mb-3">
+
+      <mat-card>
+        <mat-card-content>
+          <div class="flex justify-between items-center">
+            <div>
+              <strong>{{ it.title }}</strong> <br>
+              Preis: {{ it.price }} €
+            </div>
+
+            <div class="flex items-center gap-3">
+              <input
+                type="number"
+                min="1"
+                [value]="it.quantity"
+                (change)="updateQty(it.eventId, $event)"
+                class="border rounded p-1 w-20 text-right"
+              />
+
+              <button mat-stroked-button color="warn" (click)="removeItem(it.eventId)">
+                Entfernen
+              </button>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
     </div>
+
+    <h3 class="text-lg font-semibold mt-4">Kundendaten</h3>
+
+    <form [formGroup]="userForm" (ngSubmit)="orderTickets()">
+
+      <mat-form-field appearance="outline" class="w-full mt-3">
+        <mat-label>E-Mail</mat-label>
+        <input matInput formControlName="email" />
+        <mat-error *ngIf="userForm.get('email')?.errors?.['required']">E-Mail erforderlich</mat-error>
+        <mat-error *ngIf="userForm.get('email')?.errors?.['email']">Ungültige E-Mail</mat-error>
+      </mat-form-field>
+
+      <button mat-flat-button color="primary" class="mt-3" type="submit">
+        Tickets kaufen
+      </button>
+    </form>
   </div>
 
-  <h3>Ihre Daten</h3>
-  <form [formGroup]="userForm" (ngSubmit)="orderTickets()">
-    <label for="email">E-Mail:</label>
-    <input id="email" type="email" formControlName="email">
-    <div *ngIf="userForm.get('email')?.invalid && (userForm.get('email')?.touched || userForm.get('email')?.dirty)" class="error">
-      <span *ngIf="userForm.get('email')?.errors?.['required']">E-Mail-Adresse ist erforderlich.</span>
-      <span *ngIf="userForm.get('email')?.errors?.['email']">Bitte eine gültige E-Mail-Adresse eingeben.</span>
-      <span *ngIf="userForm.get('email')?.errors?.['emailTaken']">
-        Diese E-Mail-Adresse wird bereits verwendet. Daher wird diese Order dem entsprechenden User zugeordnet.
-      </span>
-    </div>
+  <ng-template #empty>
+    <p>Warenkorb ist leer.</p>
+  </ng-template>
 
-    <div class="mt-4">
-      <button mat-flat-button color="primary" type="submit">Buy Tickets</button>
-    </div>
-  </form>
 </div>
-
-<ng-template #emptyCart>
-  <p>Ihr Warenkorb ist leer.</p>
-</ng-template>

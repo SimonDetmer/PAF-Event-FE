@@ -1,11 +1,12 @@
 import { API_BASE_URL } from '../api.config';
-import { Component, OnInit, OnDestroy, Inject, ViewEncapsulation, Injectable } from '@angular/core';
-// Remove AuthService import as we'll get it from the auth module
+import { Component, OnInit, OnDestroy, Inject, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule, NgForOf, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
+
+// Angular Material
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -13,54 +14,60 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { OrderService } from '../order.service';
 
-interface Ticket {
-  id: number;
-  price: number;
-  order_id: any;
-}
+import { OrderService } from '../order.service';
 
 interface AppEvent {
   id: number;
   title: string;
-  tickets: Ticket[];
-  version: number;
+  locationId?: number;
+  eventDateTime: string;
   availableTickets: number;
-  // weitere Eigenschaften
+  version: number;
+  ticketPrice: number;
 }
 
 @Component({
   selector: 'app-event-overview',
   standalone: true,
-  imports: [NgIf, NgForOf, FormsModule, CommonModule, MatCardModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule, MatListModule, MatCheckboxModule],
+  imports: [
+    CommonModule,
+    NgIf,
+    NgForOf,
+    FormsModule,
+
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatListModule,
+    MatCheckboxModule
+  ],
   templateUrl: './event-overview.component.html',
   styleUrls: ['./event-overview.component.css'],
   encapsulation: ViewEncapsulation.None
 })
 export class EventOverviewComponent implements OnInit, OnDestroy {
-  data: any;
-  rawEvents: any[] = [];
+
+  data: AppEvent[] = [];
+  rawEvents: AppEvent[] = [];
   locations: any[] = [];
-  tickets: any[] = [];
+
   userRole: string | null = null;
   userEmail: string = '';
 
-  newEvent = { 
-    title: '', 
-    locationId: null as number | null, 
-    eventDateTime: '', 
-    eventDate: '', 
+  selectedTicketCounts: { [eventId: number]: number } = {};
+
+  newEvent = {
+    title: '',
+    locationId: null as number | null,
+    eventDate: '',
     eventTime: '',
     ticketPrice: null as number | null,
     ticketQuantity: 1
   };
-  newLocation = { street: '', geoX: null, geoY: null, capacity: null };
-  newTicket = { eventId: null, price: null };
 
-  selectedEventIds: number[] = [];
-  selectedTicketCounts: { [eventId: number]: number } = {};
-  selectedMap: { [eventId: number]: boolean } = {};
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -68,31 +75,16 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     @Inject(API_BASE_URL) private readonly apiBase: string,
-    private order: OrderService,
-    // Remove AuthService injection as it's not available
+    private order: OrderService
   ) {}
 
   ngOnInit(): void {
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       this.userRole = params['role'] || 'Unbekannt';
     });
-    
-    // Get user email from localStorage as fallback
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      try {
-        const user = JSON.parse(userData);
-        this.userEmail = user.email || 'Unbekannt';
-      } catch (e) {
-        this.userEmail = 'Unbekannt';
-      }
-    } else {
-      this.userEmail = 'Unbekannt';
-    }
-    
-    this.fetchData();
+
     this.fetchLocations();
-    this.fetchTickets();
+    this.fetchData();
   }
 
   ngOnDestroy(): void {
@@ -100,245 +92,122 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  // -----------------------------
+  // LOAD EVENTS
+  // -----------------------------
   fetchData(): void {
-    this.http.get<any[]>(`${this.apiBase}/events`).subscribe({
-      next: response => {
-        this.rawEvents = response;
+    this.http.get<AppEvent[]>(`${this.apiBase}/events`).subscribe({
+      next: events => {
+        this.rawEvents = events;
+
         const now = new Date();
         this.data = this.userRole !== 'eventmanager'
-          ? this.rawEvents.filter((event: any) => new Date(event.eventDateTime) >= now)
-          : response;
+          ? events.filter(e => new Date(e.eventDateTime) >= now)
+          : events;
       },
-      error: error => console.error('Fehler beim Abrufen der Events:', error)
+      error: () => alert('Fehler beim Laden der Events.')
     });
   }
 
+  // -----------------------------
+  // LOAD LOCATIONS
+  // -----------------------------
   fetchLocations(): void {
     this.http.get<any[]>(`${this.apiBase}/locations`).subscribe({
-      next: response => this.locations = response,
-      error: error => console.error('Fehler beim Abrufen der Locations:', error)
+      next: locs => this.locations = locs,
+      error: () => console.error('Fehler beim Laden der Locations')
     });
   }
 
-  fetchTickets(): void {
-    this.http.get<any[]>(`${this.apiBase}/tickets`).subscribe({
-      next: response => {
-        this.tickets = response;
-        if (this.userRole !== 'eventmanager') {
-          const now = new Date();
-          this.data = this.rawEvents.filter((event: any) => new Date(event.eventDateTime) >= now);
-        }
+  // -----------------------------
+  // CREATE EVENT  ← **JETZT WIEDER DRIN!!!**
+  // -----------------------------
+  createEvent(): void {
+    if (
+      !this.newEvent.title ||
+      !this.newEvent.locationId ||
+      !this.newEvent.eventDate ||
+      !this.newEvent.eventTime ||
+      this.newEvent.ticketPrice === null ||
+      this.newEvent.ticketQuantity === null
+    ) {
+      alert('Bitte alle Felder ausfüllen.');
+      return;
+    }
+
+    const combinedDateTime = `${this.newEvent.eventDate}T${this.newEvent.eventTime}:00`;
+
+    const payload = {
+      title: this.newEvent.title,
+      locationId: this.newEvent.locationId,
+      eventDateTime: combinedDateTime,
+      initialTickets: this.newEvent.ticketQuantity,
+      ticketPrice: this.newEvent.ticketPrice
+    };
+
+    this.http.post(`${this.apiBase}/events`, payload).subscribe({
+      next: () => {
+        alert('Event erfolgreich erstellt!');
+        this.fetchData();
       },
-      error: error => console.error('Fehler beim Abrufen der Tickets:', error)
+      error: err => {
+        console.error(err);
+        alert('Event konnte nicht erstellt werden.');
+      }
     });
   }
 
-  updateTicketCount(eventId: number, count: string | number): void {
-    const numCount = typeof count === 'string' ? parseInt(count, 10) : count;
-    this.selectedTicketCounts[eventId] = !isNaN(numCount) && numCount > 0 ? numCount : 0;
+  // -----------------------------
+  // UPDATE TICKET COUNT
+  // -----------------------------
+  updateTicketCount(eventId: number, ev: any): void {
+    const qty = Number(ev.target.value);
+    this.selectedTicketCounts[eventId] = Math.max(0, qty);
   }
 
   hasSelectedTickets(): boolean {
-    return Object.values(this.selectedTicketCounts).some(count => count > 0);
+    return Object.values(this.selectedTicketCounts).some(v => v > 0);
   }
 
+  // -----------------------------
+  // ADD TO CART
+  // -----------------------------
   addToCart(): void {
-    // Get all events with ticket count > 0
-    const selectedEvents = this.data.filter((event: any) => {
-      const count = this.selectedTicketCounts[event.id] || 0;
-      return count > 0;
-    });
-    
-    if (selectedEvents.length === 0) {
-      alert('Bitte wählen Sie mindestens ein Event mit einer Ticketanzahl > 0 aus.');
-      return;
-    }
-    
-    let hasErrors = false;
-    
-    // First validate all selections
-    for (const event of selectedEvents) {
-      const qty = this.selectedTicketCounts[event.id] || 0;
-      
-      if (qty <= 0) {
-        continue; // Skip if somehow count is 0 or negative
+    for (const e of this.data) {
+      const qty = this.selectedTicketCounts[e.id] || 0;
+
+      if (qty > 0) {
+        if (qty > e.availableTickets) {
+          alert(`Nicht genug Tickets für ${e.title}`);
+          return;
+        }
+
+        this.order.addItem({
+          eventId: e.id,
+          title: e.title,
+          price: e.ticketPrice,
+          quantity: qty,
+          availableTickets: e.availableTickets,
+          version: e.version
+        });
       }
-      
-      if (qty > event.availableTickets) {
-        alert(`Nicht genügend Tickets verfügbar für ${event.title}. Verfügbar: ${event.availableTickets}`);
-        hasErrors = true;
-        break;
-      }
-      this.selectedEventIds = [];
-      this.selectedMap = {};
-      
-      // Navigate to Cart
-      this.router.navigate(['/ticket-buy']);
     }
+
+    this.router.navigate(['/ticket-buy']);
   }
 
-  showDashboard(): void {
-    this.router.navigate(['/dashboard'], { queryParams: { role: this.userRole } });
-  }
+  // -----------------------------
+  // DELETE EVENT  ← wieder drin
+  // -----------------------------
+  deleteEvent(id: number): void {
+    if (!confirm('Event wirklich löschen?')) return;
 
-  enterEventManager(): void {
-    this.userRole = 'eventmanager';
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { role: 'eventmanager' },
-      queryParamsHandling: 'merge'
-    });
-    this.fetchData();
-  }
-
-  resetEventForm(): void {
-    this.newEvent = { 
-      title: '', 
-      locationId: null, 
-      eventDateTime: '', 
-      eventDate: '', 
-      eventTime: '',
-      ticketPrice: null,
-      ticketQuantity: 1
-    };
-  }
-
-  createEvent(): void {
-    if (!this.newEvent.title || !this.newEvent.locationId || !this.newEvent.eventDate || 
-        !this.newEvent.eventTime || this.newEvent.ticketPrice === null || this.newEvent.ticketQuantity === null) {
-      alert('Bitte füllen Sie alle Felder aus.');
-      return;
-    }
-    
-    if (this.newEvent.ticketPrice < 0) {
-      alert('Der Ticketpreis darf nicht negativ sein.');
-      return;
-    }
-    
-    if (this.newEvent.ticketQuantity <= 0) {
-      alert('Die Anzahl der Tickets muss mindestens 1 sein.');
-      return;
-    }
-    
-    const combinedDateTime = `${this.newEvent.eventDate}T${this.newEvent.eventTime}:00`;
-    const eventData = {
-      title: this.newEvent.title,
-      location: { id: this.newEvent.locationId },
-      eventDateTime: combinedDateTime,
-      ticketPrice: this.newEvent.ticketPrice,
-      ticketQuantity: this.newEvent.ticketQuantity
-    };
-    
-    // Create the event and tickets in one go
-    this.http.post(`${this.apiBase}/events`, eventData).subscribe({
-      next: () => {
-        alert('Event und Tickets erfolgreich erstellt!');
-        this.fetchData();
-        this.resetEventForm();
-      },
-      error: (error: any) => {
-        console.error('Fehler beim Erstellen des Events:', error);
-        alert('Fehler beim Erstellen des Events: ' + (error.error?.message || 'Unbekannter Fehler'));
-      }
-    });
-  }
-
-  createLocation(): void {
-    if (!this.newLocation.street || String(this.newLocation.street).trim().length === 0) {
-      alert('Bitte geben Sie eine Straße ein.');
-      return;
-    }
-    const normalizedGeoXRaw = (this.newLocation as any).geoX === '' || this.newLocation.geoX === null || this.newLocation.geoX === undefined ? null : Number(this.newLocation.geoX);
-    const normalizedGeoYRaw = (this.newLocation as any).geoY === '' || this.newLocation.geoY === null || this.newLocation.geoY === undefined ? null : Number(this.newLocation.geoY);
-    const normalizedGeoX = normalizedGeoXRaw === null || Number.isNaN(normalizedGeoXRaw) ? 0 : normalizedGeoXRaw;
-    const normalizedGeoY = normalizedGeoYRaw === null || Number.isNaN(normalizedGeoYRaw) ? 0 : normalizedGeoYRaw;
-    const normalizedCapacity = (this.newLocation as any).capacity === '' || this.newLocation.capacity === null || this.newLocation.capacity === undefined ? null : Number(this.newLocation.capacity);
-    if (normalizedCapacity === null || Number.isNaN(normalizedCapacity) || normalizedCapacity <= 0) {
-      alert('Kapazität muss eine Zahl größer 0 sein.');
-      return;
-    }
-    const locationData: any = {
-      street: String(this.newLocation.street).trim(),
-      capacity: normalizedCapacity,
-      geoX: normalizedGeoX,
-      geoY: normalizedGeoY
-    };
-    console.log('POST /locations payload:', locationData);
-    this.http.post(`${this.apiBase}/locations`, locationData).subscribe({
-      next: () => {
-        alert('Location erfolgreich hinzugefügt!');
-        this.fetchLocations();
-        this.newLocation = { street: '', geoX: null, geoY: null, capacity: null};
-      },
-      error: error => {
-        console.error('Fehler beim Erstellen der Location:', error);
-        const backendMsg = (error?.error && (error.error.message || JSON.stringify(error.error))) || error?.message || 'Unbekannter Fehler';
-        alert(`Location konnte nicht hinzugefügt werden.\nDetails: ${backendMsg}`);
-      }
-    });
-  }
-
-  createTicket(): void {
-    alert('Tickets werden jetzt direkt beim Erstellen des Events hinzugefügt. Bitte verwenden Sie das Event-Formular.');
-  }
-
-  getChecked(domEvent: any): boolean {
-    return domEvent?.target && (domEvent.target as HTMLInputElement).checked;
-  }
-
-  getTicketPrice(item: any): number | null {
-    const matchingTicket = this.tickets.find(ticket => ticket.event && ticket.event.id === item.id);
-    return matchingTicket ? matchingTicket.price : null;
-  }
-
-  get availableTickets(): any[] {
-    return this.tickets.filter(ticket => ticket.order_id == null);
-  }
-
-  getEventTitle(ticket: any): string {
-    const event = this.data?.find((e: AppEvent) =>
-      e.tickets && e.tickets.some((t: Ticket) => t.id === ticket.id)
-    );
-    return event ? event.title : 'Kein Event gefunden';
-  }
-
-  deleteEvent(id: number) {
     this.http.delete(`${this.apiBase}/events/${id}`).subscribe({
       next: () => {
-        alert('Event erfolgreich gelöscht!');
+        alert('Event gelöscht');
         this.fetchData();
       },
-      error: error => {
-        console.error('Fehler beim Löschen des Events:', error);
-        alert('Fehler beim Löschen des Events');
-      }
+      error: () => alert('Fehler beim Löschen')
     });
   }
-
-  deleteTicket(id: number) {
-    this.http.delete(`${this.apiBase}/tickets/${id}`).subscribe({
-      next: () => {
-        alert('Ticket erfolgreich gelöscht!');
-        this.fetchData();
-      },
-      error: error => {
-        console.error('Fehler beim Löschen des Tickets:', error);
-        alert('Fehler beim Löschen des Tickets');
-      }
-    });
-  }
-
-  deleteLocation(id: number) {
-    this.http.delete(`${this.apiBase}/locations/${id}`).subscribe({
-      next: () => {
-        alert('Location erfolgreich gelöscht!');
-        this.fetchData();
-      },
-      error: error => {
-        console.error('Fehler beim Löschen der Location:', error);
-        alert('Fehler beim Löschen der Location');
-      }
-    });
-  }
-
 }

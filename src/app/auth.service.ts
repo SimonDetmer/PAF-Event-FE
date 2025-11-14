@@ -31,7 +31,7 @@ export class AuthService {
     this.currentUser$ = this.currentUserSubject.asObservable();
   }
 
-  private getSession(): SessionData | null {
+  getSession(): SessionData | null {
     try {
       const session = localStorage.getItem(SESSION_KEY);
       if (!session) return null;

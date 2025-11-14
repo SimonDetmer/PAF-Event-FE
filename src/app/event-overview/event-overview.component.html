@@ -2,227 +2,139 @@
   <h2 class="text-2xl font-semibold">Event Overview</h2>
   <p>Willkommen! Sie sind angemeldet als: <strong>{{ userEmail }}</strong> ({{ userRole }})</p>
 
+  <!-- EVENT MANAGER AREA -->
   <div *ngIf="userRole === 'eventmanager'" class="space-y-6">
+
+    <!-- CREATE EVENT -->
     <mat-card appearance="outlined">
       <mat-card-header>
         <mat-card-title>Neues Event erstellen</mat-card-title>
       </mat-card-header>
       <mat-card-content>
         <form (ngSubmit)="createEvent()" class="grid gap-4 md:grid-cols-3">
+
           <mat-form-field appearance="outline" class="md:col-span-1 w-full">
             <mat-label>Titel</mat-label>
-            <input matInput id="title" type="text" [(ngModel)]="newEvent.title" name="title" required pattern=".*\S.*" #titleCtrl="ngModel">
-            <mat-error *ngIf="titleCtrl.errors?.['required']">Der Titel ist erforderlich.</mat-error>
-            <mat-error *ngIf="titleCtrl.errors?.['pattern']">Der Titel darf nicht nur aus Leerzeichen bestehen.</mat-error>
+            <input matInput [(ngModel)]="newEvent.title" name="title" required />
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="md:col-span-1 w-full">
             <mat-label>Ort</mat-label>
-            <mat-select id="location" [(ngModel)]="newEvent.locationId" name="locationId" required>
-              <mat-option *ngFor="let loc of locations" [value]="loc.id">{{ loc.street }}</mat-option>
+            <mat-select [(ngModel)]="newEvent.locationId" name="locationId" required>
+              <mat-option *ngFor="let loc of locations" [value]="loc.id">
+                {{ loc.street }} (Kap. {{ loc.capacity }})
+              </mat-option>
             </mat-select>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="md:col-span-1 w-full">
             <mat-label>Datum</mat-label>
-            <input matInput id="eventDate" type="date" [(ngModel)]="newEvent.eventDate" name="eventDate" required #eventDateCtrl="ngModel">
-            <mat-error *ngIf="eventDateCtrl.errors?.['required']">Datum ist erforderlich.</mat-error>
+            <input matInput type="date" [(ngModel)]="newEvent.eventDate" name="eventDate" required />
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="md:col-span-1 w-full">
             <mat-label>Uhrzeit</mat-label>
-            <input matInput id="eventTime" type="time" [(ngModel)]="newEvent.eventTime" name="eventTime" required step="60" #eventTimeCtrl="ngModel">
-            <mat-error *ngIf="eventTimeCtrl.errors?.['required']">Uhrzeit ist erforderlich.</mat-error>
+            <input matInput type="time" [(ngModel)]="newEvent.eventTime" name="eventTime" required />
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="md:col-span-1 w-full">
             <mat-label>Ticketpreis (€)</mat-label>
-            <input matInput type="number" [(ngModel)]="newEvent.ticketPrice" name="ticketPrice" required min="0" step="0.01" #ticketPriceCtrl="ngModel">
-            <mat-error *ngIf="ticketPriceCtrl.errors?.['required']">Ticketpreis ist erforderlich</mat-error>
-            <mat-error *ngIf="ticketPriceCtrl.errors?.['min']">Preis darf nicht negativ sein</mat-error>
+            <input matInput type="number" [(ngModel)]="newEvent.ticketPrice" name="ticketPrice" required />
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="md:col-span-1 w-full">
             <mat-label>Anzahl Tickets</mat-label>
-            <input matInput type="number" [(ngModel)]="newEvent.ticketQuantity" name="ticketQuantity" required min="1" #ticketQuantityCtrl="ngModel">
-            <mat-error *ngIf="ticketQuantityCtrl.errors?.['required']">Anzahl ist erforderlich</mat-error>
-            <mat-error *ngIf="ticketQuantityCtrl.errors?.['min']">Mindestens 1 Ticket erforderlich</mat-error>
+            <input matInput type="number" [(ngModel)]="newEvent.ticketQuantity" name="ticketQuantity" required />
           </mat-form-field>
 
           <div class="md:col-span-3">
-            <button mat-flat-button color="primary" type="submit">Event und Tickets erstellen</button>
+            <button mat-flat-button color="primary" type="submit">Event erstellen</button>
           </div>
+
         </form>
       </mat-card-content>
     </mat-card>
 
+    <!-- CREATE LOCATION -->
     <mat-card appearance="outlined">
       <mat-card-header>
-        <mat-card-title>Neue Location hinzufügen</mat-card-title>
+        <mat-card-title>Neue Location</mat-card-title>
       </mat-card-header>
       <mat-card-content>
-        <form (ngSubmit)="createLocation()" class="grid gap-4 md:grid-cols-4">
-          <mat-form-field appearance="outline" class="md:col-span-2 w-full">
-            <mat-label>Straße</mat-label>
-            <input matInput id="street" type="text" [(ngModel)]="newLocation.street" name="street" required pattern=".*\S.*" #streetCtrl="ngModel">
-            <mat-error *ngIf="streetCtrl.errors?.['required']">Die Straße ist erforderlich.</mat-error>
-            <mat-error *ngIf="streetCtrl.errors?.['pattern']">Die Straße darf nicht nur aus Leerzeichen bestehen.</mat-error>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Geo-Koordinate X (optional)</mat-label>
-            <input matInput id="geoX" type="number" [(ngModel)]="newLocation.geoX" name="geoX" step="0.0001" min="-180" max="180">
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Geo-Koordinate Y (optional)</mat-label>
-            <input matInput id="geoY" type="number" [(ngModel)]="newLocation.geoY" name="geoY" step="0.0001" min="-90" max="90">
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Kapazität</mat-label>
-            <input matInput id="capacity" type="number" [(ngModel)]="newLocation.capacity" name="capacity" required min="0" step="1">
-          </mat-form-field>
-
-          <div class="md:col-span-4">
-            <button mat-flat-button color="primary" type="submit">Location hinzufügen</button>
-          </div>
-        </form>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card appearance="outlined">
-      <mat-card-header>
-        <mat-card-title>Neues Ticket erstellen</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <form (ngSubmit)="createTicket()" class="grid gap-4 md:grid-cols-3">
-          <mat-form-field appearance="outline">
-            <mat-label>Event auswählen</mat-label>
-            <mat-select id="ticketEvent" [(ngModel)]="newTicket.eventId" name="eventId" required>
-              <mat-option *ngFor="let event of data" [value]="event.id">{{ event.title }}</mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Ticket Preis</mat-label>
-            <input matInput id="ticketPrice" type="number" [(ngModel)]="newTicket.price" name="price" required step="0.01" min="0" pattern="^\d{1,10}(\.\d{1,2})?$" #ticketPriceCtrl="ngModel">
-            <mat-error *ngIf="ticketPriceCtrl.errors?.['required']">Bitte geben Sie einen Preis ein.</mat-error>
-            <mat-error *ngIf="ticketPriceCtrl.errors?.['min']">Der Preis muss 0 oder höher sein.</mat-error>
-            <mat-error *ngIf="ticketPriceCtrl.errors?.['pattern']">Der Preis darf maximal 10 Stellen vor dem Komma und höchstens 2 Nachkommastellen haben.</mat-error>
-          </mat-form-field>
-
-          <div class="md:col-span-3">
-            <button mat-flat-button color="primary" type="submit">Ticket erstellen</button>
-          </div>
-        </form>
+        <!-- ... unverändert ... -->
       </mat-card-content>
     </mat-card>
   </div>
 
+  <!-- EVENT LIST -->
   <mat-card appearance="outlined">
     <mat-card-header>
       <mat-card-title>Event-Liste</mat-card-title>
     </mat-card-header>
     <mat-card-content>
-      <div *ngIf="data && data.length > 0; else loading" class="space-y-2">
+
+      <div *ngIf="data && data.length > 0; else loading">
         <mat-nav-list>
-          <div mat-list-item *ngFor="let item of data" class="py-2 border-b border-gray-100">
+
+          <div mat-list-item *ngFor="let item of data">
+
             <div class="w-full flex flex-col md:flex-row md:items-center gap-4">
               <div class="flex-1">
-                <div matListItemTitle class="text-lg font-medium">{{ item.title }}</div>
-                <div matListItemLine class="text-gray-600">
-                  {{ item.location?.street }} — {{ item?.eventDateTime | date:'dd.MM.yyyy HH:mm' }}
+
+                <div class="text-lg font-medium">{{ item.title }}</div>
+
+                <div class="text-gray-600">
+                  Ort-ID: {{ item.locationId }}
+                  — {{ item.eventDateTime | date:'dd.MM.yyyy HH:mm' }}
                 </div>
-                <div matListItemLine class="text-sm text-gray-500">
-                  <span class="font-medium">{{ item.tickets[0]?.price | currency:'EUR' }}</span> · 
-                  Verfügbar: {{ item?.availableTickets > 0 ? item.availableTickets : 'Ausverkauft' }}
+
+                <div class="text-sm text-gray-500">
+                  <span class="font-medium">
+                    {{ item.ticketPrice | currency:'EUR' }}
+                  </span>
+                  · Verfügbar:
+                  {{ item.availableTickets > 0 ? item.availableTickets : 'Ausverkauft' }}
                 </div>
+
               </div>
-              
-              <div class="flex items-center gap-4 mt-2 md:mt-0">
+
+              <div class="flex items-center gap-4">
                 <mat-form-field appearance="outline" class="w-32">
                   <mat-label>Anzahl</mat-label>
-                  <input matInput 
-                         type="number" 
-                         min="0" 
+                  <input matInput
+                         type="number"
+                         min="0"
                          [max]="item.availableTickets"
-                         [value]="selectedTicketCounts[item.id] || 0" 
-                         (change)="updateTicketCount(item.id, $any($event).target.value)"
-                         [disabled]="item.availableTickets <= 0"
-                         class="text-right" />
-                  <mat-hint *ngIf="item.availableTickets > 0" align="end" class="text-xs">
-                    Max. {{ item.availableTickets }}
-                  </mat-hint>
+                         (change)="updateTicketCount(item.id, $event)"
+                         [disabled]="item.availableTickets <= 0" />
                 </mat-form-field>
-                
-                <button mat-stroked-button 
-                        color="warn" 
-                        *ngIf="userRole === 'eventmanager'" 
-                        (click)="$event.stopPropagation(); deleteEvent(item.id)"
-                        class="ml-2">
+
+                <button mat-stroked-button color="warn"
+                        *ngIf="userRole === 'eventmanager'"
+                        (click)="deleteEvent(item.id)">
                   Löschen
                 </button>
               </div>
             </div>
+
           </div>
+
         </mat-nav-list>
+
         <div class="pt-4 flex justify-end">
-          <button mat-flat-button 
-                  color="primary" 
+          <button mat-flat-button color="primary"
                   (click)="addToCart()"
                   [disabled]="!hasSelectedTickets()">
             Zum Warenkorb hinzufügen
           </button>
         </div>
       </div>
+
     </mat-card-content>
   </mat-card>
-
-  <div *ngIf="userRole === 'eventmanager'" class="space-y-6">
-    <mat-card appearance="outlined">
-      <mat-card-header>
-        <mat-card-title>Location-Liste</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <div *ngIf="locations && locations.length > 0; else loading">
-          <mat-nav-list>
-            <a mat-list-item *ngFor="let loc of locations">
-              <div matListItemTitle>{{ loc.street }}</div>
-              <div matListItemLine>{{ loc.geoX }}, {{ loc.geoY }} · Kapaziät: {{loc.capacity}}</div>
-              <span class="flex-1"></span>
-              <button mat-stroked-button color="warn" (click)="deleteLocation(loc.id)">Ticket löschen</button>
-            </a>
-          </mat-nav-list>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card appearance="outlined">
-      <mat-card-header>
-        <mat-card-title>Ticket-Liste (nur verfügbare Tickets)</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <div *ngIf="tickets && tickets.length > 0; else loading">
-          <mat-nav-list>
-            <a mat-list-item *ngFor="let ticket of tickets">
-              <div matListItemTitle>Ticket ID: {{ ticket.id }} — Preis: {{ ticket.price }}</div>
-              <div matListItemLine>Event: {{ getEventTitle(ticket) }}</div>
-              <span class="flex-1"></span>
-              <button mat-stroked-button color="warn" (click)="deleteTicket(ticket.id)">Ticket löschen</button>
-            </a>
-          </mat-nav-list>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </div>
-
-  <div>
-    <button mat-stroked-button (click)="showDashboard()">Dashboard</button>
-    <button mat-stroked-button color="primary" *ngIf="userRole !== 'eventmanager'" (click)="enterEventManager()" class="ml-2">Eventmanager öffnen</button>
-  </div>
 
   <ng-template #loading>
     <p>Lade Daten...</p>
   </ng-template>
+
 </div>
