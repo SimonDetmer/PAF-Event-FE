@@ -1,49 +1,21 @@
 <div class="login-container">
-  <div class="login-card">
-    <h2>Anmelden</h2>
-    
-    <div class="form-group">
-      <label for="email">E-Mail</label>
-      <input 
-        id="email" 
-        type="email" 
-        [(ngModel)]="email" 
-        name="email"
-        placeholder="Ihre E-Mail-Adresse"
-        [disabled]="loading"
-        required
-      >
-    </div>
 
-    <div *ngIf="error" class="error-message">
-      {{ error }}
-    </div>
+  <h2>Anmeldung</h2>
 
-    <div class="button-group">
-      <button 
-        (click)="login()" 
-        [disabled]="loading"
-        class="login-button"
-      >
-        <span *ngIf="!loading">Anmelden</span>
-        <span *ngIf="loading" class="spinner"></span>
-      </button>
-      
-      <button 
-        (click)="createUser()" 
-        [disabled]="loading"
-        class="secondary-button"
-      >
-        Benutzer anlegen
-      </button>
-      
-      <button 
-        (click)="cancel()" 
-        [disabled]="loading"
-        class="tertiary-button"
-      >
-        Abbrechen
-      </button>
-    </div>
-  </div>
+  <label for="email">E-Mail</label>
+  <input
+    id="email"
+    type="email"
+    placeholder="E-Mail eingeben"
+    [(ngModel)]="email"
+  />
+
+  <button (click)="login()" [disabled]="loading || !email">
+    <span *ngIf="!loading">Anmelden</span>
+    <span *ngIf="loading">Wird angemeldet…</span>
+  </button>
+
+  <p *ngIf="message" style="color: green">{{ message }}</p>
+  <p *ngIf="error" style="color: red">{{ error }}</p>
+
 </div>

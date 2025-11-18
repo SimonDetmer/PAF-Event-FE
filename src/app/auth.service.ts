@@ -1,105 +1,77 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, tap } from 'rxjs';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { User } from './models/user';
 
-export interface User {
-  id: number;
-  email: string;
-  role: 'eventmanager' | 'customer';
-  firstName?: string;
-  lastName?: string;
-}
-
-interface SessionData {
-  user: User;
-  token: string;
-  expiresAt: number;
-}
-
-const SESSION_KEY = 'event_app_session';
-const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
-
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class AuthService {
-  private currentUserSubject: BehaviorSubject<User | null>;
-  public currentUser$: Observable<User | null>;
 
-  constructor(private router: Router) {
-    // Initialize with user from localStorage if available
-    const session = this.getSession();
-    this.currentUserSubject = new BehaviorSubject<User | null>(session?.user || null);
-    this.currentUser$ = this.currentUserSubject.asObservable();
-  }
+  http = inject(HttpClient);
+  router = inject(Router);
 
-  getSession(): SessionData | null {
-    try {
-      const session = localStorage.getItem(SESSION_KEY);
-      if (!session) return null;
+  private api = 'http://localhost:8080';
 
-      const data: SessionData = JSON.parse(session);
-      
-      // Check if session is expired
-      if (data.expiresAt < Date.now()) {
-        this.clearSession();
-        return null;
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('Error reading session:', error);
-      this.clearSession();
-      return null;
+  private currentUserSubject = new BehaviorSubject<User | null>(null);
+  currentUser$ = this.currentUserSubject.asObservable();
+
+  constructor() {
+    const jwt = this.getJwt();
+    if (jwt) {
+      this.loadUserProfile();
     }
   }
 
-  private setSession(user: User, token: string): void {
-    const session: SessionData = {
-      user,
-      token,
-      expiresAt: Date.now() + SESSION_DURATION
-    };
-    
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    this.currentUserSubject.next(user);
+  // ------------------------------------------------------------
+  //  SIMPLE LOGIN – only email
+  // ------------------------------------------------------------
+  loginSimple(email: string) {
+    return this.http.post<{ jwt: string; user: User }>(
+      `${this.api}/auth/login-simple?email=${email}`,
+      {}
+    ).pipe(
+      tap(response => {
+        this.saveJwt(response.jwt);
+        this.currentUserSubject.next(response.user);
+        this.router.navigate(['/dashboard']);
+      })
+    );
+  }
+
+  // ------------------------------------------------------------
+  //  LOAD PROFILE AFTER REFRESH
+  // ------------------------------------------------------------
+  loadUserProfile() {
+    this.http.get<User>(`${this.api}/users/me`).subscribe({
+      next: user => this.currentUserSubject.next(user),
+      error: () => this.logout()
+    });
+  }
+
+  // ------------------------------------------------------------
+  //  JWT HELPERS
+  // ------------------------------------------------------------
+  saveJwt(jwt: string) {
+    localStorage.setItem('jwt', jwt);
+  }
+
+  getJwt(): string | null {
+    return localStorage.getItem('jwt');
+  }
+
+  logout() {
+    localStorage.removeItem('jwt');
+    this.currentUserSubject.next(null);
+    this.router.navigate(['/login']);
   }
 
   isAuthenticated(): boolean {
-    const session = this.getSession();
-    if (session) {
-      // Update the current user from session
-      this.currentUserSubject.next(session.user);
-      return true;
-    }
-    return false;
+    return !!this.getJwt();
   }
 
   getCurrentUser(): User | null {
     return this.currentUserSubject.value;
-  }
-
-  getToken(): string | null {
-    const session = this.getSession();
-    return session?.token || null;
-  }
-
-  login(user: User, token: string): void {
-    this.setSession(user, token);
-    
-    // Navigate based on user role
-    if (user.role === 'eventmanager') {
-      this.router.navigate(['/event-overview']);
-    } else {
-      this.router.navigate(['/dashboard']);
-    }
-  }
-
-  logout(): void {
-    this.clearSession();
-    this.router.navigate(['/login']);
-  }
-
-  private clearSession(): void {
-    localStorage.removeItem(SESSION_KEY);
-    this.currentUserSubject.next(null);
   }
 }

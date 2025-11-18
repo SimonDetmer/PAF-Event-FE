@@ -10,16 +10,29 @@ import {UserLoginComponent} from './user-login/user-login.component';
 import { authGuard } from './auth.guard';
 
 export const routes: Routes = [
-  {path: '', redirectTo: 'login', pathMatch: 'full'},
-  {path: 'event-overview', component: EventOverviewComponent, canActivate: [authGuard]},
-  {path: 'login', component: LoginComponent},
-  {path: 'user-login', component: UserLoginComponent},
-  {path: 'create-user', component: CreateUserComponent},
-  {path: 'ticket-buy', component: TicketBuyComponent, canActivate: [authGuard]},
-  {path: 'dashboard', component: DashboardComponent, canActivate: [authGuard]},
-  {path: '**', component: NotFoundComponent}
+  // Startseite → neuer Login
+  { path: '', redirectTo: 'user-login', pathMatch: 'full' },
 
-  // Weitere Routen hier
+  // Neue Login-Seite (Email-Login)
+  { path: 'user-login', component: UserLoginComponent },
+
+  // Alter Login (falls du ihn behalten möchtest)
+  { path: 'login', component: LoginComponent },
+
+  // Event Overview
+  { path: 'event-overview', component: EventOverviewComponent, canActivate: [authGuard] },
+
+  // Dashboard
+  { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
+
+  // Ticket Kauf
+  { path: 'ticket-buy', component: TicketBuyComponent, canActivate: [authGuard] },
+
+  // Benutzer erstellen
+  { path: 'create-user', component: CreateUserComponent },
+
+  // Catch-All
+  { path: '**', component: NotFoundComponent }
 ];
 
 export const appRoutingProviders = [

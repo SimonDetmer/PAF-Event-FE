@@ -11,21 +11,24 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { OrderService } from './order.service';
-import { AuthService, User } from './auth.service';
+
+import { AuthService } from './auth.service';
+import { User } from './models/user';   // <-- KORREKT
+
 import { LoadingSpinnerComponent } from './shared/loading-spinner/loading-spinner.component';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-root',
   imports: [
-    CommonModule, 
-    RouterOutlet, 
-    RouterModule, 
-    MatToolbarModule, 
-    MatButtonModule, 
-    MatIconModule, 
-    MatSidenavModule, 
-    MatListModule, 
+    CommonModule,
+    RouterOutlet,
+    RouterModule,
+    MatToolbarModule,
+    MatButtonModule,
+    MatIconModule,
+    MatSidenavModule,
+    MatListModule,
     MatBadgeModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
@@ -41,33 +44,33 @@ export class AppComponent implements OnInit, OnDestroy {
   private userSubscription: Subscription | null = null;
 
   constructor(
-    @Inject(DOCUMENT) private readonly document: Document, 
-    private router: Router, 
-    public order: OrderService, 
+    @Inject(DOCUMENT) private readonly document: Document,
+    private router: Router,
+    public order: OrderService,
     public auth: AuthService
   ) {}
 
   ngOnInit(): void {
-    // Theme setup
+    // Theme handling
     const saved = localStorage.getItem('theme');
     if (saved === 'dark' || saved === 'light') {
       this.dark = saved === 'dark';
     } else {
-      this.dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      this.dark = window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
     this.applyDarkClass();
 
-    // Get initial user state
+    // Initial user state
     this.currentUser = this.auth.getCurrentUser();
-    
-    // Subscribe to auth state changes
+
+    // Subscribe to user changes
     this.userSubscription = this.auth.currentUser$.subscribe(user => {
       this.currentUser = user;
       console.log('User state changed:', user);
-      
-      // If user is not authenticated and not already on login page, redirect to login
-      if (!user && !this.router.url.includes('/login')) {
-        this.router.navigate(['/login']);
+
+      if (!user && !this.router.url.includes('/user-login')) {
+        this.router.navigate(['/user-login']);
       }
     });
   }
@@ -84,18 +87,12 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private applyDarkClass(): void {
     const rootEl = this.document.documentElement;
-    if (this.dark) {
-      rootEl.classList.add('dark');
-    } else {
-      rootEl.classList.remove('dark');
-    }
+    if (this.dark) rootEl.classList.add('dark');
+    else rootEl.classList.remove('dark');
   }
 
   ngOnDestroy(): void {
-    // Clean up subscription
-    if (this.userSubscription) {
-      this.userSubscription.unsubscribe();
-    }
+    this.userSubscription?.unsubscribe();
   }
 
   logout(): void {
@@ -115,12 +112,12 @@ export class AppComponent implements OnInit, OnDestroy {
   get userEmail(): string | undefined {
     return this.currentUser?.email;
   }
-  
+
   get userName(): string {
     if (!this.currentUser) return '';
     if (this.currentUser.firstName && this.currentUser.lastName) {
       return `${this.currentUser.firstName} ${this.currentUser.lastName}`;
     }
-    return this.currentUser.email.split('@')[0];
+    return this.currentUser.email?.split('@')[0] || '';
   }
 }

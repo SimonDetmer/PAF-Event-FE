@@ -1,7 +1,15 @@
 <div class="login-container">
+
   <h2>Login</h2>
-  <div class="button-container">
-    <button class="login-button" (click)="goToUserLogin()">Login mit E-Mail</button>
-    <button class="create-account-button" (click)="goToCreateUser()">Benutzer anlegen</button>
-  </div>
+
+  <input
+    type="email"
+    placeholder="E-Mail"
+    [(ngModel)]="email"
+  />
+
+  <button (click)="login()">Login</button>
+
+  <p>{{ message }}</p>
+
 </div>
