@@ -1,6 +1,5 @@
 import { Component, Inject, OnInit, OnDestroy } from '@angular/core';
-import { RouterModule, RouterOutlet } from '@angular/router';
-import { Router } from '@angular/router';
+import { RouterModule, RouterOutlet, Router } from '@angular/router';
 import { DOCUMENT, CommonModule } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,13 +12,13 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { OrderService } from './order.service';
 
 import { AuthService } from './auth.service';
-import { User } from './models/user';   // <-- KORREKT
-
+import { User } from './models/user';
 import { LoadingSpinnerComponent } from './shared/loading-spinner/loading-spinner.component';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   imports: [
     CommonModule,
     RouterOutlet,
@@ -38,6 +37,7 @@ import { Subscription } from 'rxjs';
   styleUrls: ['./app.component.css'],
 })
 export class AppComponent implements OnInit, OnDestroy {
+
   dark = false;
   sidenavOpen = true;
   currentUser: User | null = null;
@@ -56,7 +56,8 @@ export class AppComponent implements OnInit, OnDestroy {
     if (saved === 'dark' || saved === 'light') {
       this.dark = saved === 'dark';
     } else {
-      this.dark = window.matchMedia &&
+      this.dark =
+        window.matchMedia &&
         window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
     this.applyDarkClass();
@@ -64,13 +65,25 @@ export class AppComponent implements OnInit, OnDestroy {
     // Initial user state
     this.currentUser = this.auth.getCurrentUser();
 
+    // Wenn bereits ein Token existiert, Profil nachladen
+    if (this.auth.isAuthenticated()) {
+      this.auth.loadUserProfile();
+    }
+
     // Subscribe to user changes
     this.userSubscription = this.auth.currentUser$.subscribe(user => {
       this.currentUser = user;
       console.log('User state changed:', user);
 
-      if (!user && !this.router.url.includes('/user-login')) {
-        this.router.navigate(['/user-login']);
+      if (!user) {
+        const url = this.router.url;
+        const isLoginRoute = url.startsWith('/user-login');
+        const isCreateUserRoute = url.startsWith('/create-user');
+
+        // Nur redirecten, wenn wir NICHT auf Login oder Registrierung sind
+        if (!isLoginRoute && !isCreateUserRoute) {
+          this.router.navigate(['/user-login']);
+        }
       }
     });
   }
@@ -87,8 +100,11 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private applyDarkClass(): void {
     const rootEl = this.document.documentElement;
-    if (this.dark) rootEl.classList.add('dark');
-    else rootEl.classList.remove('dark');
+    if (this.dark) {
+      rootEl.classList.add('dark');
+    } else {
+      rootEl.classList.remove('dark');
+    }
   }
 
   ngOnDestroy(): void {

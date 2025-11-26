@@ -9,50 +9,56 @@ import { User } from './models/user';
 })
 export class AuthService {
 
-  http = inject(HttpClient);
-  router = inject(Router);
+  private http = inject(HttpClient);
+  private router = inject(Router);
 
   private api = 'http://localhost:8080';
 
+  // aktueller User-Status
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   currentUser$ = this.currentUserSubject.asObservable();
 
   constructor() {
     const jwt = this.getJwt();
     if (jwt) {
+      // Beim Reload Profil nachladen
       this.loadUserProfile();
     }
   }
 
-  // ------------------------------------------------------------
-  //  SIMPLE LOGIN – only email
-  // ------------------------------------------------------------
+  /**
+   * Einfacher Login nur mit E-Mail:
+   * POST /auth/login-simple?email=...
+   * Antwort: { jwt, user }
+   */
   loginSimple(email: string) {
     return this.http.post<{ jwt: string; user: User }>(
-      `${this.api}/auth/login-simple?email=${email}`,
+      `${this.api}/auth/login-simple?email=${encodeURIComponent(email)}`,
       {}
     ).pipe(
       tap(response => {
+        // JWT speichern
         this.saveJwt(response.jwt);
+        // User im State halten
         this.currentUserSubject.next(response.user);
+        // Weiter zum Dashboard
         this.router.navigate(['/dashboard']);
       })
     );
   }
 
-  // ------------------------------------------------------------
-  //  LOAD PROFILE AFTER REFRESH
-  // ------------------------------------------------------------
+  /**
+   * Profil laden (für F5 / Seite neu laden)
+   */
   loadUserProfile() {
-    this.http.get<User>(`${this.api}/users/me`).subscribe({
+    this.http.get<User>(`${this.api}/api/users/me`).subscribe({
       next: user => this.currentUserSubject.next(user),
-      error: () => this.logout()
+      error: () => this.logout() // JWT ungültig -> rauswerfen
     });
   }
 
-  // ------------------------------------------------------------
-  //  JWT HELPERS
-  // ------------------------------------------------------------
+  // ---------- JWT Helpers ----------
+
   saveJwt(jwt: string) {
     localStorage.setItem('jwt', jwt);
   }
@@ -64,7 +70,7 @@ export class AuthService {
   logout() {
     localStorage.removeItem('jwt');
     this.currentUserSubject.next(null);
-    this.router.navigate(['/login']);
+    this.router.navigate(['/user-login']);
   }
 
   isAuthenticated(): boolean {

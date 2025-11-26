@@ -1,90 +1,110 @@
-import { Component, Inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatIconModule } from '@angular/material/icon';
-import { MatRadioModule } from '@angular/material/radio';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { API_BASE_URL } from '../api.config';
+
+// Angular Material
+import { MatCardModule } from '@angular/material/card';
+import { MatRadioModule } from '@angular/material/radio';
+import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
+import { AuthService } from '../auth.service';
 
 @Component({
   selector: 'app-create-user',
   standalone: true,
   imports: [
-    CommonModule, 
-    FormsModule, 
-    ReactiveFormsModule,
-    MatButtonModule,
+    CommonModule,
+    FormsModule,
     MatCardModule,
+    MatRadioModule,
+    MatIconModule,
     MatFormFieldModule,
     MatInputModule,
-    MatIconModule,
-    MatRadioModule,
+    MatButtonModule,
     MatProgressSpinnerModule
   ],
   templateUrl: './create-user.component.html',
   styleUrls: ['./create-user.component.css']
 })
 export class CreateUserComponent {
-  selectedRole: 'eventmanager' | 'customer' | '' = '';
+
   email: string = '';
+  selectedRole: 'customer' | 'eventmanager' | '' = '';
   loading = false;
+  message = '';
+  error = '';
+
+  private apiBase = 'http://localhost:8080';
 
   constructor(
     private http: HttpClient,
     private router: Router,
-    @Inject(API_BASE_URL) private readonly apiBase: string,
+    private auth: AuthService
   ) {}
 
-  error: string = '';
-
-  createUser(): void {
+  createUser() {
     this.error = '';
-    
-    if (!this.selectedRole) {
-      this.error = 'Bitte wählen Sie eine Rolle aus.';
-      return;
-    }
-    
+    this.message = '';
+
     if (!this.email) {
-      this.error = 'Bitte geben Sie eine E-Mail-Adresse ein.';
+      this.error = 'Bitte E-Mail eingeben.';
       return;
     }
-    
-    if (!this.email.includes('@')) {
-      this.error = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
+
+    if (!this.selectedRole) {
+      this.error = 'Bitte eine Rolle auswählen.';
       return;
     }
-    
+
     this.loading = true;
-    const payload = { 
-      email: this.email,
-      role: this.selectedRole 
-    };
-    
-    this.http.post<any>(`${this.apiBase}/users`, payload).subscribe({
+
+    const url =
+      `${this.apiBase}/auth/register` +
+      `?email=${encodeURIComponent(this.email)}` +
+      `&role=${encodeURIComponent(this.selectedRole)}`;
+
+    this.http.post<any>(url, {}).subscribe({
       next: (response) => {
-        // Navigate to dashboard with role, include email for customer to auto-load data
-        const queryParams: any = { role: this.selectedRole };
-        if (this.selectedRole === 'customer') {
-          queryParams.email = this.email;
-        }
-        this.router.navigate(['/dashboard'], { queryParams });
+        console.log('Registrierung erfolgreich:', response);
+        this.message = 'Benutzer wurde erfolgreich angelegt. Sie werden jetzt angemeldet...';
+
+        // 🔐 Direkt nach der Registrierung einloggen
+        this.auth.loginSimple(this.email).subscribe({
+          next: () => {
+            // loginSimple macht bereits navigate(['/dashboard'])
+            this.loading = false;
+          },
+          error: (err) => {
+            console.error('Fehler beim automatischen Login nach Registrierung', err);
+            this.loading = false;
+            this.error = 'Benutzer wurde angelegt, aber automatischer Login ist fehlgeschlagen. Bitte manuell einloggen.';
+            // fallback: zurück zur Login-Seite
+            this.router.navigate(['/user-login']);
+          }
+        });
       },
       error: (err) => {
-        console.error('Error creating user:', err);
-        this.error = err.error?.message || 'Benutzer konnte nicht erstellt werden. Bitte versuchen Sie es später erneut.';
         this.loading = false;
+        console.error('Fehler bei der Registrierung', err);
+
+        if (err.status === 409) {
+          this.error = 'Benutzer existiert bereits. Bitte melden Sie sich an.';
+        } else if (err.status === 400) {
+          this.error = 'Ungültige Eingaben. Bitte E-Mail und Rolle prüfen.';
+        } else {
+          this.error = 'Registrierung fehlgeschlagen. Bitte später erneut versuchen.';
+        }
       }
     });
   }
 
-  cancel(): void {
-    this.router.navigate(['/login']);
+  cancel() {
+    this.router.navigate(['/user-login']);
   }
 }
