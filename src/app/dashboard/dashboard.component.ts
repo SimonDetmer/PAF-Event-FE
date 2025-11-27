@@ -39,10 +39,11 @@ import type { EChartsOption } from 'echarts';
     MatTableModule,
     MatTabsModule,
     MatCardModule,
-    NgxEchartsDirective,
-    ReportComponent
+    ReportComponent,
+    NgxEchartsDirective
   ],
   providers: [
+    DatePipe,
     provideEchartsCore({
       echarts: () => import('echarts/core')
     })
@@ -143,13 +144,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getSoldTicketsForEvent(event: any): any[] {
-    return event.tickets?.filter((ticket: any) => ticket.order_id != null)
-      ?? this.tickets.filter(
-        (ticket: any) =>
-          ticket.order_id != null &&
-          ticket.event &&
-          ticket.event.id === event.id
-      );
+    // TicketDto liefert: id, price, eventId, orderId, createdAt
+    // Wir filtern die global geladene Ticketliste nach verkauften Tickets des Events.
+    return this.tickets.filter(
+      (ticket: any) =>
+        ticket.orderId != null &&
+        ticket.eventId === event.id
+    );
   }
 
   getTotalForEvent(event: any): number {
@@ -161,7 +162,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getOverallTotal(): number {
     return this.tickets
-      .filter((t: any) => t.order_id != null)
+      .filter((t: any) => t.orderId != null)
       .reduce((sum: number, t: any) => sum + t.price, 0);
   }
 
@@ -179,50 +180,58 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.http.get<any[]>(`${this.apiBase}/users`).subscribe(users => {
-      const found = users.find(u =>
-        String(u.email).trim().toLowerCase() ===
-        String(this.user?.email).trim().toLowerCase()
-      );
+    // Bestellungen für den eingeloggten User laden
+    this.http.get<any[]>(`${this.apiBase}/orders`).subscribe({
+      next: (orders) => {
+        const userId = this.user!.id;
+        this.customerOrders = orders.filter((o: any) => o.userId === userId);
 
-      if (!found) {
-        this.errorMessage = 'Benutzerdaten konnten nicht geladen werden.';
-        return;
+        if (this.customerOrders.length === 0) {
+          this.errorMessage = 'Keine Bestellungen gefunden.';
+          this.cdr.markForCheck();
+          return;
+        }
+
+        this.loadEventsAndProcessOrders();
+      },
+      error: (err) => {
+        console.error('Fehler beim Laden der Bestellungen', err);
+        this.errorMessage = 'Bestellungen konnten nicht geladen werden.';
+        this.cdr.markForCheck();
       }
-
-      this.customerUser = found;
-      this.customerOrders = found.orders || [];
-
-      if (this.customerOrders.length === 0) {
-        this.errorMessage = 'Keine Bestellungen gefunden.';
-        return;
-      }
-
-      this.loadEventsAndProcessOrders();
     });
   }
 
   private loadEventsAndProcessOrders(): void {
-    this.http.get<any[]>(`${this.apiBase}/events`).subscribe(events => {
+    this.http.get<any[]>(`${this.apiBase}/events`).subscribe({
+      next: (events) => {
+        const eventMap: { [id: number]: any } = {};
 
-      const ticketMap: { [id: number]: any } = {};
-
-      events.forEach(ev => {
-        ev.tickets?.forEach((ticket: any) => {
-          ticketMap[ticket.id] = ev;
+        // Map Event-ID -> Event-Objekt
+        events.forEach(ev => {
+          eventMap[ev.id] = ev;
         });
-      });
 
-      this.customerOrders.forEach(order => {
-        order.tickets?.forEach((ticket: any) => {
-          if (!ticket.event) {
-            ticket.event = ticketMap[ticket.id];
-          }
+        // Tickets der Bestellungen mit Event-Objekten anreichern
+        this.customerOrders.forEach(order => {
+          order.tickets?.forEach((ticket: any) => {
+            if (!ticket.event) {
+              const ev = eventMap[ticket.eventId];
+              if (ev) {
+                ticket.event = ev;
+              }
+            }
+          });
         });
-      });
 
-      this.groupCustomerEvents();
-      this.cdr.markForCheck();
+        this.groupCustomerEvents();
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Fehler beim Laden der Events für Kundendaten', err);
+        this.errorMessage = 'Events konnten nicht geladen werden.';
+        this.cdr.markForCheck();
+      }
     });
   }
 
@@ -249,11 +258,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
     });
 
-    this.customerEvents = Object.values(map).sort(
-      (a: any, b: any) =>
-        new Date(a.event.eventDateTime).getTime() -
-        new Date(b.event.eventDateTime).getTime()
-    );
+    this.customerEvents = Object.values(map);
 
     this.prepareCustomerCharts();
     this.cdr.markForCheck();
@@ -298,13 +303,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
 
     const revenueData = this.sortedEvents.map(e => ({
-      value: this.getTotalForEvent(e),
-      name: e.title
+      name: e.title,
+      value: this.getTotalForEvent(e)
     }));
 
     this.revenueDistributionChart = {
       title: { text: 'Revenue Distribution', left: 'center' },
       tooltip: { trigger: 'item' },
+      legend: { orient: 'vertical', left: 'left' },
       series: [
         {
           type: 'pie',
@@ -317,7 +323,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const dateMap = new Map<string, number>();
 
     this.tickets.forEach((ticket: any) => {
-      if (ticket.order_id) {
+      if (ticket.orderId) {
         const d = new Date(ticket.createdAt).toISOString().split('T')[0];
         dateMap.set(d, (dateMap.get(d) || 0) + 1);
       }
