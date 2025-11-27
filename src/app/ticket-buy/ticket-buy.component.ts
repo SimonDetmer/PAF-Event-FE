@@ -1,106 +1,160 @@
-import { Component, OnInit, Inject } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Inject
+} from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { CommonModule, NgIf, NgForOf } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { API_BASE_URL } from '../api.config';
 
+import { MatTableModule } from '@angular/material/table';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatListModule } from '@angular/material/list';
 
-import { OrderService, OrderItem } from '../order.service';
+import { OrderService, CartItem } from '../order.service';
+import { AuthService } from '../auth.service';
+import { User } from '../models/user';
+import { API_BASE_URL } from '../api.config';
 
 @Component({
   selector: 'app-ticket-buy',
   standalone: true,
   imports: [
     CommonModule,
-    NgIf,
-    NgForOf,
     FormsModule,
-    ReactiveFormsModule,
-
-    // Material
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
+    MatTableModule,
     MatButtonModule,
-    MatListModule
+    MatCardModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MatInputModule
   ],
   templateUrl: './ticket-buy.component.html',
-  styleUrls: ['./ticket-buy.component.css']
+  styleUrls: ['./ticket-buy.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TicketBuyComponent implements OnInit {
 
-  items: OrderItem[] = [];
-  userForm!: FormGroup;
+  user: User | null = null;
+  items: CartItem[] = [];
+  displayedColumns = ['title', 'price', 'quantity', 'total', 'actions'];
+
+  loading = false;
+  errorMessage = '';
+  successMessage = '';
+
+  private apiBase = '';
 
   constructor(
     private order: OrderService,
-    private fb: FormBuilder,
+    private auth: AuthService,
+    private http: HttpClient,
     private router: Router,
-    @Inject(API_BASE_URL) private readonly apiBase: string
-  ) {}
+    private cdr: ChangeDetectorRef,
+    @Inject(API_BASE_URL) apiBaseUrl: string
+  ) {
+    this.apiBase = apiBaseUrl;
+  }
 
   ngOnInit(): void {
-    this.items = this.order.getItems();
-
-    this.userForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]]
+    this.auth.currentUser$.subscribe(user => {
+      this.user = user;
+      if (!user) {
+        this.router.navigate(['/user-login']);
+        return;
+      }
+      this.items = this.order.getItems();
+      this.cdr.markForCheck();
     });
   }
 
-  updateQty(eventId: number, event: any): void {
-    const qty = Number(event.target.value);
-    this.order.updateQuantity(eventId, qty);
+  getTotal(): number {
+    return this.order.getTotal();
   }
 
-  removeItem(id: number): void {
-    this.order.removeItem(id);
+  updateQuantity(item: CartItem, value: string): void {
+    const n = parseInt(value, 10);
+    if (isNaN(n) || n <= 0) {
+      this.order.removeItem(item.eventId);
+    } else {
+      this.order.updateQuantity(item.eventId, n);
+    }
     this.items = this.order.getItems();
+    this.cdr.markForCheck();
   }
 
-  // -------------------------------------------------------
-  // FIXED ORDER FLOW — Backend Compatible
-  // -------------------------------------------------------
-  orderTickets(): void {
-    if (this.userForm.invalid) {
-      alert('Bitte gültige Email eingeben');
+  removeItem(item: CartItem): void {
+    this.order.removeItem(item.eventId);
+    this.items = this.order.getItems();
+    this.cdr.markForCheck();
+  }
+
+  cancel(): void {
+    this.router.navigate(['/event-overview']);
+  }
+
+  confirmOrder(): void {
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    if (!this.user) {
+      this.errorMessage = 'Kein Benutzer angemeldet.';
+      this.router.navigate(['/user-login']);
       return;
     }
 
+    if (this.items.length === 0) {
+      this.errorMessage = 'Keine Tickets im Warenkorb.';
+      return;
+    }
+
+    this.loading = true;
+    this.order.setLoading(true); // 👉 globaler Spinner an
+
     const payload = {
-      userId: 1, // TODO: User-ID einbauen, bis dahin statisch
+      userId: this.user.id,
       items: this.items.map(i => ({
         eventId: i.eventId,
         quantity: i.quantity
       }))
     };
 
-    console.log('POST ORDER', payload);
+    this.http.post<any>(`${this.apiBase}/orders`, payload).subscribe({
+      next: (response) => {
+        this.loading = false;
+        this.order.setLoading(false); // 👉 globaler Spinner aus
+        this.successMessage = 'Bestellung erfolgreich erstellt.';
+        console.log('Order response', response);
 
-    fetch(`${this.apiBase}/orders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-      .then(async res => {
-        if (!res.ok) {
-          const msg = await res.text();
-          throw new Error(msg);
-        }
-        return res.json();
-      })
-      .then(() => {
-        alert('Tickets erfolgreich gekauft!');
         this.order.clear();
-        this.router.navigate(['/']);
-      })
-      .catch(err => {
-        console.error('Fehler beim Kauf:', err);
-        alert('Fehler beim Kauf!');
-      });
+        this.items = [];
+        this.cdr.markForCheck();
+
+        setTimeout(() => {
+          this.router.navigate(['/dashboard']);
+        }, 800);
+      },
+      error: (err) => {
+        this.loading = false;
+        this.order.setLoading(false); // 👉 globaler Spinner aus
+        console.error('Fehler bei der Bestellung', err);
+
+        if (err.status === 409) {
+          this.errorMessage = 'Bestellung konnte nicht durchgeführt werden (Kollision / zu wenig Tickets). Bitte aktualisieren Sie die Seite.';
+        } else if (err.status === 400) {
+          this.errorMessage = 'Ungültige Bestelldaten. Bitte prüfen Sie den Warenkorb.';
+        } else {
+          this.errorMessage = 'Bestellung fehlgeschlagen. Bitte später erneut versuchen.';
+        }
+
+        this.cdr.markForCheck();
+      }
+    });
   }
 }
