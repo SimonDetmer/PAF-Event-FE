@@ -1,8 +1,15 @@
 import { API_BASE_URL } from '../api.config';
-import { Component, OnInit, OnDestroy, Inject, ViewEncapsulation } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  Inject,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { CommonModule, NgForOf, NgIf } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 
@@ -16,26 +23,15 @@ import { MatListModule } from '@angular/material/list';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 
 import { OrderService } from '../order.service';
-
-interface AppEvent {
-  id: number;
-  title: string;
-  locationId?: number;
-  eventDateTime: string;
-  availableTickets: number;
-  version: number;
-  ticketPrice: number;
-}
+import { AuthService } from '../auth.service';
+import { User } from '../models/user';
 
 @Component({
   selector: 'app-event-overview',
   standalone: true,
   imports: [
     CommonModule,
-    NgIf,
-    NgForOf,
     FormsModule,
-
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
@@ -46,17 +42,24 @@ interface AppEvent {
   ],
   templateUrl: './event-overview.component.html',
   styleUrls: ['./event-overview.component.css'],
-  encapsulation: ViewEncapsulation.None
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EventOverviewComponent implements OnInit, OnDestroy {
 
-  data: AppEvent[] = [];
-  rawEvents: AppEvent[] = [];
+  user: User | null = null;
+  userEmail: string = '';
+  userRole: string | null = null;
+
+  events: any[] = [];
+  filteredEvents: any[] = [];
   locations: any[] = [];
 
-  userRole: string | null = null;
-  userEmail: string = '';
+  loading = false;
+  errorMessage = '';
 
+  showPastEvents = false;
+
+  // eventId -> ausgewählte Ticketanzahl
   selectedTicketCounts: { [eventId: number]: number } = {};
 
   newEvent = {
@@ -65,7 +68,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
     eventDate: '',
     eventTime: '',
     ticketPrice: null as number | null,
-    ticketQuantity: 1
+    ticketQuantity: 1 as number | null
   };
 
   private destroy$ = new Subject<void>();
@@ -74,17 +77,30 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private route: ActivatedRoute,
     private router: Router,
+    private auth: AuthService,
+    private cdr: ChangeDetectorRef,
     @Inject(API_BASE_URL) private readonly apiBase: string,
     private order: OrderService
   ) {}
 
   ngOnInit(): void {
-    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
-      this.userRole = params['role'] || 'Unbekannt';
-    });
+    // User aus AuthService holen
+    this.auth.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        this.user = user;
+        this.userEmail = user?.email ?? '';
+        this.userRole = user?.role ?? 'unknown';
 
-    this.fetchLocations();
-    this.fetchData();
+        if (!user) {
+          this.router.navigate(['/user-login']);
+          return;
+        }
+
+        this.fetchLocations();
+        this.fetchData();
+        this.cdr.markForCheck();
+      });
   }
 
   ngOnDestroy(): void {
@@ -92,37 +108,73 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // -----------------------------
-  // LOAD EVENTS
-  // -----------------------------
+  // ----------------------------------------------------
+  // EVENTS LADEN / FILTERN
+  // ----------------------------------------------------
   fetchData(): void {
-    this.http.get<AppEvent[]>(`${this.apiBase}/events`).subscribe({
-      next: events => {
-        this.rawEvents = events;
+    this.loading = true;
+    this.errorMessage = '';
 
-        const now = new Date();
-        this.data = this.userRole !== 'eventmanager'
-          ? events.filter(e => new Date(e.eventDateTime) >= now)
-          : events;
+    this.http.get<any[]>(`${this.apiBase}/events`).subscribe({
+      next: (events) => {
+        this.events = events;
+        this.applyFilter();
+        this.loading = false;
+        this.cdr.markForCheck();
       },
-      error: () => alert('Fehler beim Laden der Events.')
+      error: () => {
+        this.loading = false;
+        this.errorMessage = 'Fehler beim Laden der Events.';
+        this.cdr.markForCheck();
+      }
     });
   }
 
-  // -----------------------------
-  // LOAD LOCATIONS
-  // -----------------------------
+  applyFilter(): void {
+    const now = new Date();
+
+    this.filteredEvents = this.events.filter(e => {
+      const eventDate = new Date(e.eventDateTime);
+      if (this.showPastEvents) {
+        return true;
+      }
+      return eventDate >= now;
+    });
+  }
+
+  onToggleShowPast(): void {
+    this.applyFilter();
+  }
+
+  // ----------------------------------------------------
+  // LOCATIONS LADEN
+  // ----------------------------------------------------
   fetchLocations(): void {
     this.http.get<any[]>(`${this.apiBase}/locations`).subscribe({
-      next: locs => this.locations = locs,
-      error: () => console.error('Fehler beim Laden der Locations')
+      next: locs => {
+        this.locations = locs;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        console.error('Fehler beim Laden der Locations');
+      }
     });
   }
 
-  // -----------------------------
-  // CREATE EVENT  ← **JETZT WIEDER DRIN!!!**
-  // -----------------------------
+  getLocationName(locationId: number): string {
+    const loc = this.locations.find(l => l.id === locationId);
+    return loc ? loc.name : `Location #${locationId}`;
+  }
+
+  // ----------------------------------------------------
+  // EVENT ERSTELLEN (nur Manager)
+  // ----------------------------------------------------
   createEvent(): void {
+    if (this.userRole !== 'eventmanager') {
+      alert('Nur Eventmanager können Events erstellen.');
+      return;
+    }
+
     if (
       !this.newEvent.title ||
       !this.newEvent.locationId ||
@@ -148,6 +200,15 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
     this.http.post(`${this.apiBase}/events`, payload).subscribe({
       next: () => {
         alert('Event erfolgreich erstellt!');
+        // Formular zurücksetzen
+        this.newEvent = {
+          title: '',
+          locationId: null,
+          eventDate: '',
+          eventTime: '',
+          ticketPrice: null,
+          ticketQuantity: 1
+        };
         this.fetchData();
       },
       error: err => {
@@ -157,49 +218,61 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
     });
   }
 
-  // -----------------------------
-  // UPDATE TICKET COUNT
-  // -----------------------------
-  updateTicketCount(eventId: number, ev: any): void {
-    const qty = Number(ev.target.value);
-    this.selectedTicketCounts[eventId] = Math.max(0, qty);
+  // ----------------------------------------------------
+  // TICKETS AUSWÄHLEN / WARENKORB
+  // ----------------------------------------------------
+  changeCount(eventId: number, value: string): void {
+    const n = parseInt(value, 10);
+    if (isNaN(n) || n < 0) {
+      this.selectedTicketCounts[eventId] = 0;
+    } else {
+      this.selectedTicketCounts[eventId] = n;
+    }
   }
 
   hasSelectedTickets(): boolean {
     return Object.values(this.selectedTicketCounts).some(v => v > 0);
   }
 
-  // -----------------------------
-  // ADD TO CART
-  // -----------------------------
-  addToCart(): void {
-    for (const e of this.data) {
-      const qty = this.selectedTicketCounts[e.id] || 0;
+  addSelectedTicketsToCart(): void {
+    const itemsToAdd = this.filteredEvents
+      .map(e => ({
+        event: e,
+        count: this.selectedTicketCounts[e.id] || 0
+      }))
+      .filter(x => x.count > 0);
 
-      if (qty > 0) {
-        if (qty > e.availableTickets) {
-          alert(`Nicht genug Tickets für ${e.title}`);
-          return;
-        }
-
-        this.order.addItem({
-          eventId: e.id,
-          title: e.title,
-          price: e.ticketPrice,
-          quantity: qty,
-          availableTickets: e.availableTickets,
-          version: e.version
-        });
-      }
+    if (itemsToAdd.length === 0) {
+      alert('Bitte mindestens ein Ticket auswählen.');
+      return;
     }
 
+    for (const { event, count } of itemsToAdd) {
+      this.order.addItem({
+        eventId: event.id,
+        title: event.title,
+        price: event.ticketPrice,
+        quantity: count,
+        version: event.version,
+        availableTickets: event.availableTickets
+      });
+    }
+
+    // Auswahl zurücksetzen
+    this.selectedTicketCounts = {};
+    alert('Tickets zum Warenkorb hinzugefügt.');
     this.router.navigate(['/ticket-buy']);
   }
 
-  // -----------------------------
-  // DELETE EVENT  ← wieder drin
-  // -----------------------------
+  // ----------------------------------------------------
+  // EVENT LÖSCHEN (nur Manager)
+  // ----------------------------------------------------
   deleteEvent(id: number): void {
+    if (this.userRole !== 'eventmanager') {
+      alert('Nur Eventmanager können Events löschen.');
+      return;
+    }
+
     if (!confirm('Event wirklich löschen?')) return;
 
     this.http.delete(`${this.apiBase}/events/${id}`).subscribe({
