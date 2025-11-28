@@ -1,0 +1,162 @@
+<mat-card class="max-w-4xl mx-auto mt-6" appearance="outlined">
+  <mat-card-header>
+    <mat-card-title>Location-Verwaltung</mat-card-title>
+    <mat-card-subtitle>
+      Nur für Eventmanager – hier legen Sie Locations für Events an.
+    </mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+
+    <div *ngIf="errorMessage" class="mb-4 text-red-600">
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="successMessage" class="mb-4 text-green-600">
+      {{ successMessage }}
+    </div>
+
+    <!-- Neues Location-Formular -->
+    <section class="mb-6 space-y-4">
+      <h3 class="text-lg font-semibold">Neue Location anlegen</h3>
+
+      <div class="grid gap-4 md:grid-cols-4">
+        <!-- street -->
+        <mat-form-field appearance="outline" class="w-full md:col-span-2">
+          <mat-label>Straße / Bezeichnung</mat-label>
+          <input
+            matInput
+            [(ngModel)]="newLocation.street"
+            name="street"
+            placeholder="z.B. Stadthalle Konstanz"
+          />
+        </mat-form-field>
+
+        <!-- geoX -->
+        <mat-form-field appearance="outline" class="w-full md:col-span-1">
+          <mat-label>Geo X (Längengrad)</mat-label>
+          <input
+            matInput
+            type="number"
+            step="0.0001"
+            min="-180"
+            max="180"
+            [(ngModel)]="newLocation.geoX"
+            name="geoX"
+            placeholder="z.B. 8.1234"
+          />
+        </mat-form-field>
+
+        <!-- geoY -->
+        <mat-form-field appearance="outline" class="w-full md:col-span-1">
+          <mat-label>Geo Y (Breitengrad)</mat-label>
+          <input
+            matInput
+            type="number"
+            step="0.0001"
+            min="-90"
+            max="90"
+            [(ngModel)]="newLocation.geoY"
+            name="geoY"
+            placeholder="z.B. 47.6543"
+          />
+        </mat-form-field>
+
+        <!-- capacity -->
+        <mat-form-field appearance="outline" class="w-full md:col-span-1">
+          <mat-label>Kapazität</mat-label>
+          <input
+            matInput
+            type="number"
+            min="0"
+            [(ngModel)]="newLocation.capacity"
+            name="capacity"
+            placeholder="z.B. 200"
+          />
+        </mat-form-field>
+      </div>
+
+      <div class="flex justify-end">
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="createLocation()"
+          [disabled]="loading || !newLocation.street || newLocation.geoX === null || newLocation.geoY === null"
+        >
+          Location erstellen
+        </button>
+      </div>
+    </section>
+
+    <!-- Location-Liste -->
+    <section>
+      <h3 class="text-lg font-semibold mb-2">Vorhandene Locations</h3>
+
+      <div *ngIf="loading">
+        <p>Lade Locations...</p>
+      </div>
+
+      <div *ngIf="!loading && locations.length === 0">
+        <p>Keine Locations vorhanden.</p>
+      </div>
+
+      <table
+        *ngIf="!loading && locations.length > 0"
+        mat-table
+        [dataSource]="locations"
+        class="w-full"
+      >
+        <!-- ID -->
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef> ID </th>
+          <td mat-cell *matCellDef="let loc"> {{ loc.id }} </td>
+        </ng-container>
+
+        <!-- Straße -->
+        <ng-container matColumnDef="street">
+          <th mat-header-cell *matHeaderCellDef> Straße / Bezeichnung </th>
+          <td mat-cell *matCellDef="let loc"> {{ loc.street }} </td>
+        </ng-container>
+
+        <!-- GeoX -->
+        <ng-container matColumnDef="geoX">
+          <th mat-header-cell *matHeaderCellDef> Geo X </th>
+          <td mat-cell *matCellDef="let loc"> {{ loc.geoX }} </td>
+        </ng-container>
+
+        <!-- GeoY -->
+        <ng-container matColumnDef="geoY">
+          <th mat-header-cell *matHeaderCellDef> Geo Y </th>
+          <td mat-cell *matCellDef="let loc"> {{ loc.geoY }} </td>
+        </ng-container>
+
+        <!-- Kapazität -->
+        <ng-container matColumnDef="capacity">
+          <th mat-header-cell *matHeaderCellDef> Kapazität </th>
+          <td mat-cell *matCellDef="let loc">
+            {{ loc.capacity ?? '—' }}
+          </td>
+        </ng-container>
+
+        <!-- Aktionen -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let loc">
+            <button
+              mat-icon-button
+              color="warn"
+              (click)="deleteLocation(loc)"
+              [disabled]="loading"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+    </section>
+
+  </mat-card-content>
+</mat-card>

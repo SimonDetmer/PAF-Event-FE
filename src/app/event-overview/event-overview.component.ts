@@ -163,7 +163,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
 
   getLocationName(locationId: number): string {
     const loc = this.locations.find(l => l.id === locationId);
-    return loc ? loc.name : `Location #${locationId}`;
+    return loc ? loc.street : `Location #${locationId}`;
   }
 
   // ----------------------------------------------------
