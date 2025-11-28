@@ -27,7 +27,7 @@
             <mat-label>Location</mat-label>
             <mat-select [(ngModel)]="newEvent.locationId" name="locationId">
               <mat-option *ngFor="let loc of locations" [value]="loc.id">
-                {{ loc.name }}
+                {{ loc.name }} ({{ loc.city }})
               </mat-option>
             </mat-select>
           </mat-form-field>

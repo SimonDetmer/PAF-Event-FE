@@ -47,14 +47,13 @@ export class LocationManagementComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
 
-  // Spalten basierend auf deinem Location-Entity
-  displayedColumns: string[] = ['id', 'street', 'geoX', 'geoY', 'capacity', 'actions'];
+  // Spalten basierend auf neuem Location-Entity
+  displayedColumns: string[] = ['id', 'name', 'city', 'capacity', 'actions'];
 
-  // Neues Location-Formular: Felder entsprechen genau dem Backend
+  // Neues Location-Formular
   newLocation = {
-    street: '',
-    geoX: null as number | null,
-    geoY: null as number | null,
+    name: '',
+    city: '',
     capacity: null as number | null
   };
 
@@ -121,38 +120,38 @@ export class LocationManagementComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
-    if (!this.newLocation.street) {
-      this.errorMessage = 'Bitte eine Straße / Bezeichnung für die Location angeben.';
-      return;
-    }
-    if (this.newLocation.geoX === null || this.newLocation.geoY === null) {
-      this.errorMessage = 'Bitte Geo-Koordinaten (geoX, geoY) angeben.';
+    if (!this.newLocation.name) {
+      this.errorMessage = 'Bitte einen Namen für die Location angeben.';
       return;
     }
 
-    // Standard-Kapazität, falls leer
+    if (!this.newLocation.city) {
+      this.errorMessage = 'Bitte einen Ort für die Location angeben.';
+      return;
+    }
+
     const capacity = this.newLocation.capacity ?? 0;
 
     this.loading = true;
 
     const payload: any = {
-      street: this.newLocation.street,
-      geoX: this.newLocation.geoX,
-      geoY: this.newLocation.geoY,
+      name: this.newLocation.name,
+      city: this.newLocation.city,
       capacity: capacity
     };
 
     this.http.post<any>(`${this.apiBase}/locations`, payload).subscribe({
-      next: (loc) => {
+      next: () => {
         this.loading = false;
         this.successMessage = 'Location erfolgreich erstellt.';
-        this.newLocation = { street: '', geoX: null, geoY: null, capacity: null };
+        this.newLocation = { name: '', city: '', capacity: null };
         this.loadLocations();
       },
       error: (err) => {
         this.loading = false;
         console.error('Fehler beim Erstellen der Location', err);
-        this.errorMessage = 'Location konnte nicht erstellt werden. Bitte Eingaben prüfen (Pflichtfelder, Wertebereiche).';
+        this.errorMessage =
+          'Location konnte nicht erstellt werden. Bitte Eingaben prüfen (Pflichtfelder, Wertebereiche).';
         this.cdr.markForCheck();
       }
     });
@@ -162,7 +161,7 @@ export class LocationManagementComponent implements OnInit {
   // LOCATION LÖSCHEN
   // ----------------------------------------------------
   deleteLocation(loc: any): void {
-    if (!confirm(`Location "${loc.street || loc.id}" wirklich löschen?`)) {
+    if (!confirm(`Location "${loc.name || loc.id}" wirklich löschen?`)) {
       return;
     }
 

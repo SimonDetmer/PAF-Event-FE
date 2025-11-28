@@ -163,8 +163,19 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
 
   getLocationName(locationId: number): string {
     const loc = this.locations.find(l => l.id === locationId);
-    return loc ? loc.street : `Location #${locationId}`;
+    if (!loc) {
+      return `Location #${locationId}`;
+    }
+
+    // Nur Name, falls keine Stadt gesetzt ist
+    if (!loc.city) {
+      return loc.name;
+    }
+
+    // "Stadthalle Konstanz (Konstanz)"
+    return `${loc.name} (${loc.city})`;
   }
+
 
   // ----------------------------------------------------
   // EVENT ERSTELLEN (nur Manager)
