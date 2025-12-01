@@ -51,8 +51,22 @@ export class AuthService {
    * Profil laden (für F5 / Seite neu laden)
    */
   loadUserProfile() {
+    const jwt = this.getJwt();
+
+    // Falls es (inzwischen) gar kein JWT mehr gibt, nichts tun
+    if (!jwt) {
+      this.currentUserSubject.next(null);
+      return;
+    }
+
     this.http.get<User>(`${this.api}/api/users/me`).subscribe({
-      next: user => this.currentUserSubject.next(user),
+      next: user => {
+        // Nur dann den User setzen, wenn es noch ein JWT gibt.
+        // Wenn in der Zwischenzeit logout() aufgerufen wurde, ist jwt weg.
+        if (this.getJwt()) {
+          this.currentUserSubject.next(user);
+        }
+      },
       error: () => this.logout() // JWT ungültig -> rauswerfen
     });
   }
@@ -69,12 +83,16 @@ export class AuthService {
 
   logout() {
     localStorage.removeItem('jwt');
+    // UI-Zustand zurücksetzen
     this.currentUserSubject.next(null);
     this.router.navigate(['/user-login']);
   }
 
+  // 🔴 WICHTIG: Für das UI nur noch auf currentUser hören
   isAuthenticated(): boolean {
-    return !!this.getJwt();
+    // Für die Anzeige von Toolbar/Sidebar reicht:
+    // currentUser != null
+    return this.currentUserSubject.value !== null;
   }
 
   getCurrentUser(): User | null {

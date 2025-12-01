@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../auth.service';
@@ -14,7 +14,7 @@ import { Router } from '@angular/router';
   templateUrl: './user-login.component.html',
   styleUrls: ['./user-login.component.css'],
 })
-export class UserLoginComponent {
+export class UserLoginComponent implements OnInit {
 
   email: string = '';
   loading = false;
@@ -25,6 +25,13 @@ export class UserLoginComponent {
     private auth: AuthService,
     private router: Router
   ) {}
+
+  ngOnInit(): void {
+    // WICHTIG: hier ist dein „Startscreen“.
+    // Sobald der User auf /user-login landet, machen wir hart Logout,
+    // damit Sidebar & „eingeloggt als“ verschwinden.
+    this.auth.logout();
+  }
 
   login() {
     this.error = '';
