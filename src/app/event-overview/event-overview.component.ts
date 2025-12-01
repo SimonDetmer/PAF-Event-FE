@@ -99,6 +99,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
 
         this.fetchLocations();
         this.fetchData();
+
         this.cdr.markForCheck();
       });
   }
@@ -175,7 +176,6 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
     // "Stadthalle Konstanz (Konstanz)"
     return `${loc.name} (${loc.city})`;
   }
-
 
   // ----------------------------------------------------
   // EVENT ERSTELLEN (nur Manager)
