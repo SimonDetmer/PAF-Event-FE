@@ -1,113 +1,34 @@
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, Inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { forkJoin } from 'rxjs';
+
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
 import { BarChart, LineChart, PieChart, HeatmapChart } from 'echarts/charts';
-import { GridComponent, LegendComponent, TooltipComponent, VisualMapComponent, TitleComponent } from 'echarts/components';
+import {
+  GridComponent,
+  LegendComponent,
+  TooltipComponent,
+  VisualMapComponent,
+  TitleComponent
+} from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { EChartsCoreOption } from 'echarts';
 
-echarts.use([LineChart, BarChart, PieChart, HeatmapChart, GridComponent, LegendComponent, TooltipComponent, VisualMapComponent, TitleComponent, CanvasRenderer]);
+import { API_BASE_URL } from '../api.config';
 
-// Interfaces zur Typisierung
-export interface TicketSale {
-  date: string;
-  ticketCount: number;
-}
-
-export interface TicketSalePerEvent {
-  eventId: number;
-  eventTitle: string;
-  ticketCount: number;
-}
-
-export interface EventSummary {
-  eventId: number;
-  eventTitle: string;
-  ticketCount: number;
-  totalRevenue: number;
-}
-
-export interface BookingHeatmapEntry {
-  day: string;
-  timeSlot: number;
-  ticketCount: number;
-}
-
-export interface LocationOccupancy {
-  locationId: number;
-  street: string;
-  ticketCount: number;
-  capacity: number;
-}
-
-// Beispiel-Daten (sinnvoll ergänzt)
-const chartData = {
-  // 1. Ticket Sales Over Time (Line Chart)
-  ticketSalesOverTime: [
-    { date: '2025-03-07', ticketCount: 10 },
-    { date: '2025-03-08', ticketCount: 12 },
-    { date: '2025-03-09', ticketCount: 32 },
-    { date: '2025-03-10', ticketCount: 29 },
-    { date: '2025-03-11', ticketCount: 78 }
-  ],
-  // 2. Ticket Sales Per Event (Bar Chart)
-  ticketSalesPerEvent: [
-    { eventId: 2, eventTitle: 'Geiel ePAry', ticketCount: 54 },
-    { eventId: 1, eventTitle: 'Geile Party', ticketCount: 26 },
-    { eventId: 3, eventTitle: 'Mega Konzert', ticketCount: 40 }
-  ],
-  // 3. Event Summaries (Pie Chart: Anteil des Gesamtumsatzes)
-  eventSummaries: [
-    { eventId: 2, eventTitle: 'Geiel ePAry', ticketCount: 54, totalRevenue: 1782.0 },
-    { eventId: 1, eventTitle: 'Geile Party', ticketCount: 26, totalRevenue: 858.0 },
-    { eventId: 3, eventTitle: 'Mega Konzert', ticketCount: 40, totalRevenue: 1200.0 }
-  ],
-  // 4. Booking Heatmap (Heatmap Chart)
-  // Buchungszeiten: 9, 12, 15, 18, 21 Uhr für alle Wochentage (Montag bis Sonntag)
-  bookingHeatmap: [
-    { day: 'Monday', timeSlot: 9, ticketCount: 5 },
-    { day: 'Monday', timeSlot: 12, ticketCount: 10 },
-    { day: 'Monday', timeSlot: 15, ticketCount: 15 },
-    { day: 'Monday', timeSlot: 18, ticketCount: 40 },
-    { day: 'Monday', timeSlot: 21, ticketCount: 60 },
-    { day: 'Tuesday', timeSlot: 9, ticketCount: 6 },
-    { day: 'Tuesday', timeSlot: 12, ticketCount: 12 },
-    { day: 'Tuesday', timeSlot: 15, ticketCount: 18 },
-    { day: 'Tuesday', timeSlot: 18, ticketCount: 45 },
-    { day: 'Tuesday', timeSlot: 21, ticketCount: 55 },
-    { day: 'Wednesday', timeSlot: 9, ticketCount: 4 },
-    { day: 'Wednesday', timeSlot: 12, ticketCount: 9 },
-    { day: 'Wednesday', timeSlot: 15, ticketCount: 14 },
-    { day: 'Wednesday', timeSlot: 18, ticketCount: 50 },
-    { day: 'Wednesday', timeSlot: 21, ticketCount: 65 },
-    { day: 'Thursday', timeSlot: 9, ticketCount: 3 },
-    { day: 'Thursday', timeSlot: 12, ticketCount: 8 },
-    { day: 'Thursday', timeSlot: 15, ticketCount: 13 },
-    { day: 'Thursday', timeSlot: 18, ticketCount: 55 },
-    { day: 'Thursday', timeSlot: 21, ticketCount: 70 },
-    { day: 'Friday', timeSlot: 9, ticketCount: 7 },
-    { day: 'Friday', timeSlot: 12, ticketCount: 14 },
-    { day: 'Friday', timeSlot: 15, ticketCount: 20 },
-    { day: 'Friday', timeSlot: 18, ticketCount: 60 },
-    { day: 'Friday', timeSlot: 21, ticketCount: 80 },
-    { day: 'Saturday', timeSlot: 9, ticketCount: 8 },
-    { day: 'Saturday', timeSlot: 12, ticketCount: 16 },
-    { day: 'Saturday', timeSlot: 15, ticketCount: 22 },
-    { day: 'Saturday', timeSlot: 18, ticketCount: 65 },
-    { day: 'Saturday', timeSlot: 21, ticketCount: 90 },
-    { day: 'Sunday', timeSlot: 9, ticketCount: 6 },
-    { day: 'Sunday', timeSlot: 12, ticketCount: 11 },
-    { day: 'Sunday', timeSlot: 15, ticketCount: 17 },
-    { day: 'Sunday', timeSlot: 18, ticketCount: 50 },
-    { day: 'Sunday', timeSlot: 21, ticketCount: 75 }
-  ],
-  // 5. Location Occupancy (Bar Chart: Auslastung in %)
-  locationOccupancy: [
-    { locationId: 2, street: 'Geile Str 2', ticketCount: 54, capacity: 500 },
-    { locationId: 1, street: 'Geile Str', ticketCount: 26, capacity: 20 },
-    { locationId: 3, street: 'Coole Allee', ticketCount: 75, capacity: 100 }
-  ]
-};
+echarts.use([
+  LineChart,
+  BarChart,
+  PieChart,
+  HeatmapChart,
+  GridComponent,
+  LegendComponent,
+  TooltipComponent,
+  VisualMapComponent,
+  TitleComponent,
+  CanvasRenderer
+]);
 
 @Component({
   selector: 'app-report',
@@ -118,73 +39,156 @@ const chartData = {
   providers: [provideEchartsCore({ echarts })]
 })
 export class ReportComponent implements OnInit, AfterViewInit {
-  // Initialisierung mit leeren Objekten, um Lint-Fehler zu vermeiden
-  chartOption1: EChartsCoreOption = {}; // Ticket Sales Over Time (Line Chart)
-  chartOption2: EChartsCoreOption = {}; // Ticket Sales Per Event (Bar Chart)
-  chartOption3: EChartsCoreOption = {}; // Event Summaries (Pie Chart)
-  chartOption4: EChartsCoreOption = {}; // Booking Heatmap (Heatmap Chart)
-  chartOption5: EChartsCoreOption = {}; // Location Occupancy (Bar Chart)
-  
-  // Flag zur Verfolgung des Heatmap-Status
+  chartOption1: EChartsCoreOption = {}; // Ticket Sales Over Time (Line)
+  chartOption2: EChartsCoreOption = {}; // Ticket Sales Per Event (Bar)
+  chartOption3: EChartsCoreOption = {}; // Revenue Distribution (Pie)
+  chartOption4: EChartsCoreOption = {}; // Booking Heatmap (Heatmap)
+  chartOption5: EChartsCoreOption = {}; // Location Occupancy (Bar)
+
   private heatmapInitialized = false;
 
-  constructor() {
-    this.initChartOptions();
-  }
+  // Live-Daten
+  private events: any[] = [];
+  private tickets: any[] = [];
+  private locations: any[] = [];
+
+  constructor(
+    private http: HttpClient,
+    @Inject(API_BASE_URL) private readonly apiBase: string
+  ) {}
 
   ngOnInit() {
-    console.log('Report component initialized');
+    // Live laden statt Dummy chartData
+    this.loadLiveReportData();
   }
 
   ngAfterViewInit() {
-    // Warte eine kurze Zeit, damit DOM vollständig gerendert ist
-    setTimeout(() => {
-      this.initHeatmap();
-    }, 100);
+    setTimeout(() => this.initHeatmap(), 100);
   }
 
+  // ----------------------------------------------------
+  // Helper: hide ECharts titles (like dashboard)
+  // ----------------------------------------------------
+  private hideChartTitle(option: EChartsCoreOption): EChartsCoreOption {
+    const title: any = (option as any).title;
+    if (!title) return option;
+
+    const hiddenTitle = Array.isArray(title)
+      ? title.map((t: any) => ({ ...t, show: false }))
+      : { ...title, show: false };
+
+    return { ...(option as any), title: hiddenTitle } as EChartsCoreOption;
+  }
+
+  // ----------------------------------------------------
+  // Load live data from backend
+  // ----------------------------------------------------
+  private loadLiveReportData(): void {
+    forkJoin({
+      events: this.http.get<any[]>(`${this.apiBase}/events`),
+      tickets: this.http.get<any[]>(`${this.apiBase}/tickets`),
+      locations: this.http.get<any[]>(`${this.apiBase}/locations`)
+    }).subscribe({
+      next: ({ events, tickets, locations }) => {
+        this.events = events ?? [];
+        this.tickets = tickets ?? [];
+        this.locations = locations ?? [];
+
+        this.initChartOptionsFromLiveData();
+
+        // Heatmap needs a small refresh after DOM paint (ngx-echarts quirk)
+        setTimeout(() => this.initHeatmap(), 100);
+      },
+      error: (err) => {
+        console.error('Failed to load report data', err);
+        // Fallback: show empty charts rather than crashing
+        this.chartOption1 = {};
+        this.chartOption2 = {};
+        this.chartOption3 = {};
+        this.chartOption4 = {};
+        this.chartOption5 = {};
+      }
+    });
+  }
+
+  // ----------------------------------------------------
+  // Heatmap re-init (unchanged idea from your code)
+  // ----------------------------------------------------
   private initHeatmap() {
-    console.log('Initializing heatmap...');
     if (!this.heatmapInitialized) {
-      // Force-Update der Heatmap
-      const updatedOptions = { ...this.chartOption4 };
-      this.chartOption4 = updatedOptions;
+      this.chartOption4 = { ...this.chartOption4 };
       this.heatmapInitialized = true;
-      console.log('Heatmap re-initialized');
     }
   }
 
-  private initChartOptions() {
-    // === Chart 1: Ticket Sales Over Time (Line Chart) ===
-    const salesOverTime = chartData.ticketSalesOverTime.slice();
-    salesOverTime.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    const dates = salesOverTime.map(item => item.date);
-    const counts = salesOverTime.map(item => item.ticketCount);
-    this.chartOption1 = {
+  // ----------------------------------------------------
+  // Build charts from LIVE tickets/events/locations
+  // ----------------------------------------------------
+  private initChartOptionsFromLiveData(): void {
+    // We only consider "sold" tickets (your dashboard logic: orderId != null)
+    const soldTickets = this.tickets.filter((t: any) => t?.orderId != null);
+
+    // === Chart 1: Ticket Sales Over Time (Line) ===
+    const dateMap = new Map<string, number>();
+    for (const t of soldTickets) {
+      const d = this.safeDateOnly(t?.createdAt);
+      if (!d) continue;
+      dateMap.set(d, (dateMap.get(d) || 0) + 1);
+    }
+    const dates = Array.from(dateMap.keys()).sort();
+    const counts = dates.map(d => dateMap.get(d) || 0);
+
+    this.chartOption1 = this.hideChartTitle({
+      // title would be redundant – heading belongs in HTML
       tooltip: { trigger: 'axis' },
       xAxis: { type: 'category', data: dates },
       yAxis: { type: 'value' },
       series: [{ data: counts, type: 'line', smooth: true }]
-    };
+    });
 
-    // === Chart 2: Ticket Sales Per Event (Bar Chart) ===
-    const events = chartData.ticketSalesPerEvent;
-    const eventTitles = events.map(e => e.eventTitle);
-    const eventCounts = events.map(e => e.ticketCount);
-    this.chartOption2 = {
+    // === Chart 2: Ticket Sales Per Event (Bar) ===
+    const eventTitleById = new Map<number, string>();
+    for (const e of this.events) eventTitleById.set(e.id, e.title);
+
+    const perEvent = new Map<number, number>();
+    for (const t of soldTickets) {
+      const eid = t?.eventId;
+      if (typeof eid !== 'number') continue;
+      perEvent.set(eid, (perEvent.get(eid) || 0) + 1);
+    }
+
+    const perEventEntries = Array.from(perEvent.entries())
+      .map(([eventId, ticketCount]) => ({
+        eventId,
+        eventTitle: eventTitleById.get(eventId) || `Event #${eventId}`,
+        ticketCount
+      }))
+      .sort((a, b) => b.ticketCount - a.ticketCount);
+
+    this.chartOption2 = this.hideChartTitle({
       tooltip: { trigger: 'axis' },
-      xAxis: { type: 'category', data: eventTitles },
+      xAxis: { type: 'category', data: perEventEntries.map(e => e.eventTitle) },
       yAxis: { type: 'value' },
-      series: [{ data: eventCounts, type: 'bar' }]
-    };
+      series: [{ data: perEventEntries.map(e => e.ticketCount), type: 'bar' }]
+    });
 
-    // === Chart 3: Event Summaries (Pie Chart) ===
-    const summaries = chartData.eventSummaries;
-    const pieData = summaries.map(item => ({
-      value: item.totalRevenue,
-      name: item.eventTitle
-    }));
-    this.chartOption3 = {
+    // === Chart 3: Revenue Distribution (Pie) ===
+    const revenueByEvent = new Map<number, number>();
+    for (const t of soldTickets) {
+      const eid = t?.eventId;
+      const price = Number(t?.price ?? 0);
+      if (typeof eid !== 'number') continue;
+      revenueByEvent.set(eid, (revenueByEvent.get(eid) || 0) + price);
+    }
+
+    const pieData = Array.from(revenueByEvent.entries())
+      .map(([eventId, totalRevenue]) => ({
+        value: totalRevenue,
+        name: eventTitleById.get(eventId) || `Event #${eventId}`
+      }))
+      .sort((a, b) => (b.value as number) - (a.value as number));
+
+    this.chartOption3 = this.hideChartTitle({
       tooltip: { trigger: 'item' },
       series: [{
         name: 'Total Revenue',
@@ -193,76 +197,93 @@ export class ReportComponent implements OnInit, AfterViewInit {
         data: pieData,
         label: { formatter: '{b}: {d}%' }
       }]
-    };
+    });
 
-    // === Chart 5: Location Occupancy (Bar Chart) ===
-    const locations = chartData.locationOccupancy;
-    const locationLabels = locations.map(loc => loc.street);
-    const occupancyPercents = locations.map(loc =>
-      Number(((loc.ticketCount / loc.capacity) * 100).toFixed(2))
-    );
-    this.chartOption5 = {
+    // === Chart 5: Location Occupancy (Bar) ===
+    // We compute sold tickets per location via event.locationId
+    const locationById = new Map<number, any>();
+    for (const l of this.locations) locationById.set(l.id, l);
+
+    const eventById = new Map<number, any>();
+    for (const e of this.events) eventById.set(e.id, e);
+
+    const soldByLocation = new Map<number, number>();
+    for (const t of soldTickets) {
+      const ev = eventById.get(t?.eventId);
+      const locId = ev?.locationId;
+      if (typeof locId !== 'number') continue;
+      soldByLocation.set(locId, (soldByLocation.get(locId) || 0) + 1);
+    }
+
+    const occupancy = Array.from(soldByLocation.entries())
+      .map(([locationId, ticketCount]) => {
+        const loc = locationById.get(locationId);
+        const capacity = Number(loc?.capacity ?? 0) || 0;
+
+        // Label: "Name (City)" if available, fallback
+        const name = loc?.name || `Location #${locationId}`;
+        const city = loc?.city ? ` (${loc.city})` : '';
+        const label = `${name}${city}`;
+
+        const percent = capacity > 0 ? Number(((ticketCount / capacity) * 100).toFixed(2)) : 0;
+
+        return { label, percent };
+      })
+      .sort((a, b) => b.percent - a.percent);
+
+    this.chartOption5 = this.hideChartTitle({
       tooltip: { formatter: '{b}: {c}%' },
-      xAxis: { type: 'category', data: locationLabels },
+      xAxis: { type: 'category', data: occupancy.map(o => o.label) },
       yAxis: {
         type: 'value',
-        max: Math.max(...occupancyPercents, 100),
+        max: Math.max(...occupancy.map(o => o.percent), 100),
         axisLabel: { formatter: '{value} %' }
       },
-      series: [{ data: occupancyPercents, type: 'bar' }]
-    };
+      series: [{ data: occupancy.map(o => o.percent), type: 'bar' }]
+    });
 
-    // === Chart 4: Booking Heatmap (Heatmap Chart) ===
-    this.initializeHeatmapChart();
+    // === Chart 4: Booking Heatmap (Heatmap) ===
+    this.initializeHeatmapFromTickets(soldTickets);
   }
 
-  private initializeHeatmapChart() {
-    console.log('Initializing Heatmap chart data...');
-    const heatmapRaw: BookingHeatmapEntry[] = chartData.bookingHeatmap;
-    
-    // Definiere geordnete Tage und Zeitfenster für bessere Darstellung
+  // ----------------------------------------------------
+  // Heatmap built from real ticket timestamps
+  // ----------------------------------------------------
+  private initializeHeatmapFromTickets(soldTickets: any[]): void {
     const orderedDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const orderedTimeSlots = [9, 12, 15, 18, 21];
-    
-    // Array für direkte Verwendung von ECharts
+
+    // bucket map: dayIndex|timeIndex -> count
+    const bucket = new Map<string, number>();
+
+    for (const t of soldTickets) {
+      const dt = this.safeDate(t?.createdAt);
+      if (!dt) continue;
+
+      const dayIndex = this.getIsoDayIndex(dt); // 0..6 (Mon..Sun)
+      const hour = dt.getHours();
+
+      const timeIndex = this.closestTimeSlotIndex(hour, orderedTimeSlots);
+      const key = `${dayIndex}|${timeIndex}`;
+      bucket.set(key, (bucket.get(key) || 0) + 1);
+    }
+
     const heatmapData: any[] = [];
-    
-    // 2D-Array-Struktur erstellen
-    for (let dayIndex = 0; dayIndex < orderedDays.length; dayIndex++) {
-      for (let timeIndex = 0; timeIndex < orderedTimeSlots.length; timeIndex++) {
-        const day = orderedDays[dayIndex];
-        const timeSlot = orderedTimeSlots[timeIndex];
-        
-        // Suche den entsprechenden Eintrag
-        const entry = heatmapRaw.find(item => 
-          item.day === day && item.timeSlot === timeSlot
-        );
-        
-        // Werte zuordnen
-        const value = entry ? entry.ticketCount : 0;
-        
-        // Daten im Format [x, y, value] hinzufügen
-        heatmapData.push([timeIndex, dayIndex, value]);
+    for (let d = 0; d < orderedDays.length; d++) {
+      for (let ti = 0; ti < orderedTimeSlots.length; ti++) {
+        const key = `${d}|${ti}`;
+        const value = bucket.get(key) || 0;
+        heatmapData.push([ti, d, value]); // [x=timeIndex, y=dayIndex, value]
       }
     }
-    
-    // Log um sicherzustellen, dass Daten vorhanden sind
-    console.log('Generated heatmap data:', heatmapData);
-    
-    if (heatmapData.length === 0) {
-      console.error('No heatmap data available!'); 
-      return;
-    }
-    
-    // Maximum-Wert für die Farbskala
+
     const maxValue = Math.max(...heatmapData.map(item => item[2] || 0), 1);
-    console.log('Max value for heatmap:', maxValue);
-    
-    // Vereinfachte und robustere Heatmap-Konfiguration
-    this.chartOption4 = {
+
+    // Keep your structure, but hide the internal title like dashboard
+    this.chartOption4 = this.hideChartTitle({
       animation: true,
       title: {
-        text: 'Booking Times Heatmap',
+        text: 'Booking Times Heatmap', // kept but hidden
         left: 'center',
         top: 5
       },
@@ -272,9 +293,6 @@ export class ReportComponent implements OnInit, AfterViewInit {
           const timeSlot = orderedTimeSlots[params.value[0]];
           const day = orderedDays[params.value[1]];
           return `<strong>${day}, ${timeSlot}:00</strong><br/>Tickets: ${params.value[2]}`;
-        },
-        textStyle: {
-          fontSize: 14
         }
       },
       grid: {
@@ -289,24 +307,13 @@ export class ReportComponent implements OnInit, AfterViewInit {
         type: 'category',
         data: orderedTimeSlots.map(slot => `${slot}:00`),
         splitArea: { show: true },
-        axisLabel: { 
-          fontSize: 12,
-          interval: 0,
-          rotate: 0
-        },
-        axisTick: { show: true },
-        axisLine: { show: true }
+        axisLabel: { fontSize: 12, interval: 0 }
       },
       yAxis: {
         type: 'category',
         data: orderedDays,
         splitArea: { show: true },
-        axisLabel: { 
-          fontSize: 12,
-          interval: 0
-        },
-        axisTick: { show: true },
-        axisLine: { show: true }
+        axisLabel: { fontSize: 12, interval: 0 }
       },
       visualMap: {
         type: 'continuous',
@@ -315,32 +322,17 @@ export class ReportComponent implements OnInit, AfterViewInit {
         calculable: true,
         orient: 'horizontal',
         left: 'center',
-        bottom: '0',
-        show: true,
-        inRange: {
-          color: ['#F5F5F5', '#ADD8E6', '#90CAF9', '#42A5F5', '#1976D2', '#0D47A1']
-        },
-        textStyle: {
-          color: '#333'
-        }
+        bottom: 0,
+        show: true
       },
       series: [
         {
           name: 'Tickets by Time',
           type: 'heatmap',
           data: heatmapData,
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 10,
-              shadowColor: 'rgba(0, 0, 0, 0.5)'
-            }
-          },
           label: {
             show: true,
-            color: '#000',
-            formatter: (params: any) => {
-              return params.value[2] > 0 ? params.value[2] : '';
-            }
+            formatter: (params: any) => (params.value[2] > 0 ? params.value[2] : '')
           },
           itemStyle: {
             borderWidth: 1,
@@ -348,8 +340,41 @@ export class ReportComponent implements OnInit, AfterViewInit {
           }
         }
       ]
-    };
-    
-    console.log('Heatmap configuration created successfully');
+    });
+  }
+
+  // ----------------------------------------------------
+  // Utils
+  // ----------------------------------------------------
+  private safeDateOnly(value: any): string | null {
+    const dt = this.safeDate(value);
+    if (!dt) return null;
+    return dt.toISOString().split('T')[0];
+  }
+
+  private safeDate(value: any): Date | null {
+    if (!value) return null;
+    const dt = new Date(value);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  // JS: getDay() => 0=Sun..6=Sat; convert to Mon..Sun index 0..6
+  private getIsoDayIndex(dt: Date): number {
+    const js = dt.getDay(); // 0..6
+    return (js + 6) % 7; // Mon=0 ... Sun=6
+  }
+
+  private closestTimeSlotIndex(hour: number, slots: number[]): number {
+    // nearest by absolute distance
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < slots.length; i++) {
+      const dist = Math.abs(slots[i] - hour);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+      }
+    }
+    return bestIdx;
   }
 }

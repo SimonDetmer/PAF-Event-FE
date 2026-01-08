@@ -122,6 +122,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   // ----------------------------------------------------
+  // Helper: hide ECharts titles (avoid duplicate headlines in panels)
+  // ----------------------------------------------------
+  private hideChartTitle(option: EChartsOption): EChartsOption {
+    const title: any = (option as any).title;
+
+    // If no title exists, return as-is.
+    if (!title) return option;
+
+    // ECharts title can be an object or array of objects
+    const hiddenTitle = Array.isArray(title)
+      ? title.map((t: any) => ({ ...t, show: false }))
+      : { ...title, show: false };
+
+    return { ...(option as any), title: hiddenTitle } as EChartsOption;
+  }
+
+  // ----------------------------------------------------
   // MANAGER VIEW DATA
   // ----------------------------------------------------
   loadData(): void {
@@ -284,7 +301,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private prepareManagerCharts(): void {
     if (this.sortedEvents.length === 0) return;
 
-    this.salesByEventChart = {
+    this.salesByEventChart = this.hideChartTitle({
       title: { text: 'Ticket Sales by Event', left: 'center' },
       tooltip: { trigger: 'axis' },
       xAxis: {
@@ -300,14 +317,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
           data: this.sortedEvents.map(e => this.getSoldTicketsForEvent(e).length)
         }
       ]
-    };
+    });
 
     const revenueData = this.sortedEvents.map(e => ({
       name: e.title,
       value: this.getTotalForEvent(e)
     }));
 
-    this.revenueDistributionChart = {
+    this.revenueDistributionChart = this.hideChartTitle({
       title: { text: 'Revenue Distribution', left: 'center' },
       tooltip: { trigger: 'item' },
       legend: { orient: 'vertical', left: 'left' },
@@ -318,7 +335,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           data: revenueData
         }
       ]
-    };
+    });
 
     const dateMap = new Map<string, number>();
 
@@ -331,7 +348,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     const sortedDates = Array.from(dateMap.keys()).sort();
 
-    this.salesOverTimeChart = {
+    this.salesOverTimeChart = this.hideChartTitle({
       title: { text: 'Sales Over Time', left: 'center' },
       xAxis: { type: 'category', data: sortedDates },
       yAxis: { type: 'value' },
@@ -341,7 +358,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           data: sortedDates.map(d => dateMap.get(d))
         }
       ]
-    };
+    });
   }
 
   // ----------------------------------------------------
@@ -350,7 +367,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private prepareCustomerCharts(): void {
     if (this.customerEvents.length === 0) return;
 
-    this.customerDistributionChart = {
+    this.customerDistributionChart = this.hideChartTitle({
       title: { text: 'Your Ticket Distribution', left: 'center' },
       series: [
         {
@@ -362,9 +379,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
           }))
         }
       ]
-    };
+    });
 
-    this.customerSpendingChart = {
+    this.customerSpendingChart = this.hideChartTitle({
       title: { text: 'Your Spending by Event', left: 'center' },
       xAxis: {
         type: 'category',
@@ -377,6 +394,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
           data: this.customerEvents.map(e => e.total)
         }
       ]
-    };
+    });
   }
 }
