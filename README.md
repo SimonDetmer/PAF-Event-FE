@@ -1,59 +1,118 @@
-# EventMFE
+# EventM – Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.1.5.
+## Overview
 
-## Development server
+The frontend of **EventM** is an Angular-based single-page application that provides a user-friendly interface for event management and ticket purchasing.  
+It focuses on clarity, responsiveness, and clear feedback for concurrency-related errors.
 
-To start a local development server, run:
+---
 
-```bash
-ng serve
-```
+## Technology Stack
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Angular
+- TypeScript
+- Angular Material
+- RxJS
+- ngx-echarts (ECharts)
+- HTML / CSS
 
-## Code scaffolding
+---
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Application Structure
 
-```bash
-ng generate component component-name
-```
+The frontend is organized into:
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+- **Components**
+  - Event overview
+  - Dashboard (manager & customer views)
+  - Ticket purchase flow
+  - Reports and visualizations
 
-```bash
-ng generate --help
-```
+- **Services**
+  - Authentication service
+  - Order service
+  - API communication services
 
-## Building
+- **Models**
+  - User
+  - Event
+  - Order
+  - Ticket
 
-To build the project run:
+---
 
-```bash
-ng build
-```
+## Role-Based Views
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+### Event Manager
+- Create and manage events
+- View ticket sales and revenue
+- Access reports and charts
 
-## Running unit tests
+### Customer
+- Browse upcoming events
+- Purchase tickets
+- View past orders and spending summaries
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+---
 
-```bash
-ng test
-```
+## Ticket Purchase Flow
 
-## Running end-to-end tests
+1. User selects tickets and adds them to the cart.
+2. The frontend stores the current event version.
+3. During checkout, the version is sent to the backend.
+4. If a conflict occurs:
+  - The backend returns HTTP 409.
+  - The frontend displays a clear error message.
+  - The user is prompted to refresh and retry.
 
-For end-to-end (e2e) testing, run:
+---
 
-```bash
-ng e2e
-```
+## Visualization
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+The dashboard includes multiple visualizations:
 
-## Additional Resources
+- Ticket sales over time
+- Revenue distribution
+- Ticket distribution per event
+- Booking time heatmap
+- Location occupancy
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+All charts are implemented using **ECharts** via `ngx-echarts`.
+
+---
+
+## Error Handling & UX
+
+- Loading indicators during API calls
+- Clear error messages for failed orders
+- Graceful handling of concurrency conflicts
+- Minimal UI complexity for presentation clarity
+
+---
+
+## Running the Frontend
+
+### Requirements
+- Node.js (LTS)
+- npm
+
+### Steps
+
+1. Install dependencies:
+   ```bash
+   npm install
+   
+2. Start the development server:
+   ng serve
+
+The application will be available at:
+http://localhost:4200
+
+---
+
+## Notes
+
+The frontend intentionally keeps complexity low while clearly demonstrating:
+- state handling
+- error feedback
+- concurrency-aware user interactions
