@@ -43,7 +43,7 @@ export class ReportComponent implements OnInit, AfterViewInit {
   chartOption2: EChartsCoreOption = {}; // Ticket Sales Per Event (Bar)
   chartOption3: EChartsCoreOption = {}; // Revenue Distribution (Pie)
   chartOption4: EChartsCoreOption = {}; // Booking Heatmap (Heatmap)
-  chartOption5: EChartsCoreOption = {}; // Location Occupancy (Bar)
+  chartOption5: EChartsCoreOption = {}; // Tickets sold per Location (Bar)
 
   private heatmapInitialized = false;
 
@@ -136,10 +136,9 @@ export class ReportComponent implements OnInit, AfterViewInit {
       dateMap.set(d, (dateMap.get(d) || 0) + 1);
     }
     const dates = Array.from(dateMap.keys()).sort();
-    const counts = dates.map(d => dateMap.get(d) || 0);
+    const counts = dates.map((d) => dateMap.get(d) || 0);
 
     this.chartOption1 = this.hideChartTitle({
-      // title would be redundant – heading belongs in HTML
       tooltip: { trigger: 'axis' },
       xAxis: { type: 'category', data: dates },
       yAxis: { type: 'value' },
@@ -167,9 +166,9 @@ export class ReportComponent implements OnInit, AfterViewInit {
 
     this.chartOption2 = this.hideChartTitle({
       tooltip: { trigger: 'axis' },
-      xAxis: { type: 'category', data: perEventEntries.map(e => e.eventTitle) },
+      xAxis: { type: 'category', data: perEventEntries.map((e) => e.eventTitle) },
       yAxis: { type: 'value' },
-      series: [{ data: perEventEntries.map(e => e.ticketCount), type: 'bar' }]
+      series: [{ data: perEventEntries.map((e) => e.ticketCount), type: 'bar' }]
     });
 
     // === Chart 3: Revenue Distribution (Pie) ===
@@ -190,16 +189,18 @@ export class ReportComponent implements OnInit, AfterViewInit {
 
     this.chartOption3 = this.hideChartTitle({
       tooltip: { trigger: 'item' },
-      series: [{
-        name: 'Total Revenue',
-        type: 'pie',
-        radius: '50%',
-        data: pieData,
-        label: { formatter: '{b}: {d}%' }
-      }]
+      series: [
+        {
+          name: 'Total Revenue',
+          type: 'pie',
+          radius: '50%',
+          data: pieData,
+          label: { formatter: '{b}: {d}%' }
+        }
+      ]
     });
 
-    // === Chart 5: Location Occupancy (Bar) ===
+    // === Chart 5: Tickets sold per Location (Bar) ===
     // We compute sold tickets per location via event.locationId
     const locationById = new Map<number, any>();
     for (const l of this.locations) locationById.set(l.id, l);
@@ -218,28 +219,23 @@ export class ReportComponent implements OnInit, AfterViewInit {
     const occupancy = Array.from(soldByLocation.entries())
       .map(([locationId, ticketCount]) => {
         const loc = locationById.get(locationId);
-        const capacity = Number(loc?.capacity ?? 0) || 0;
 
-        // Label: "Name (City)" if available, fallback
         const name = loc?.name || `Location #${locationId}`;
         const city = loc?.city ? ` (${loc.city})` : '';
         const label = `${name}${city}`;
 
-        const percent = capacity > 0 ? Number(((ticketCount / capacity) * 100).toFixed(2)) : 0;
-
-        return { label, percent };
+        return { label, ticketCount };
       })
-      .sort((a, b) => b.percent - a.percent);
+      .sort((a, b) => b.ticketCount - a.ticketCount);
 
     this.chartOption5 = this.hideChartTitle({
-      tooltip: { formatter: '{b}: {c}%' },
-      xAxis: { type: 'category', data: occupancy.map(o => o.label) },
+      tooltip: { formatter: '{b}: {c} tickets sold' },
+      xAxis: { type: 'category', data: occupancy.map((o) => o.label) },
       yAxis: {
         type: 'value',
-        max: Math.max(...occupancy.map(o => o.percent), 100),
-        axisLabel: { formatter: '{value} %' }
+        axisLabel: { formatter: '{value} tickets' }
       },
-      series: [{ data: occupancy.map(o => o.percent), type: 'bar' }]
+      series: [{ data: occupancy.map((o) => o.ticketCount), type: 'bar' }]
     });
 
     // === Chart 4: Booking Heatmap (Heatmap) ===
@@ -277,13 +273,12 @@ export class ReportComponent implements OnInit, AfterViewInit {
       }
     }
 
-    const maxValue = Math.max(...heatmapData.map(item => item[2] || 0), 1);
+    const maxValue = Math.max(...heatmapData.map((item) => item[2] || 0), 1);
 
-    // Keep your structure, but hide the internal title like dashboard
     this.chartOption4 = this.hideChartTitle({
       animation: true,
       title: {
-        text: 'Booking Times Heatmap', // kept but hidden
+        text: 'Booking Times Heatmap',
         left: 'center',
         top: 5
       },
@@ -305,7 +300,7 @@ export class ReportComponent implements OnInit, AfterViewInit {
       },
       xAxis: {
         type: 'category',
-        data: orderedTimeSlots.map(slot => `${slot}:00`),
+        data: orderedTimeSlots.map((slot) => `${slot}:00`),
         splitArea: { show: true },
         axisLabel: { fontSize: 12, interval: 0 }
       },
@@ -365,7 +360,6 @@ export class ReportComponent implements OnInit, AfterViewInit {
   }
 
   private closestTimeSlotIndex(hour: number, slots: number[]): number {
-    // nearest by absolute distance
     let bestIdx = 0;
     let bestDist = Infinity;
     for (let i = 0; i < slots.length; i++) {
