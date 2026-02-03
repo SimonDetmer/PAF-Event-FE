@@ -59,7 +59,6 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
 
   showPastEvents = false;
 
-  // eventId -> ausgewählte Ticketanzahl
   selectedTicketCounts: { [eventId: number]: number } = {};
 
   newEvent = {
@@ -84,7 +83,6 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // User aus AuthService holen
     this.auth.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
@@ -110,7 +108,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   }
 
   // ----------------------------------------------------
-  // EVENTS LADEN / FILTERN
+  // LOADING/FILTERING EVENTS
   // ----------------------------------------------------
   fetchData(): void {
     this.loading = true;
@@ -148,7 +146,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   }
 
   // ----------------------------------------------------
-  // LOCATIONS LADEN
+  // LOADING LOCATIONS
   // ----------------------------------------------------
   fetchLocations(): void {
     this.http.get<any[]>(`${this.apiBase}/locations`).subscribe({
@@ -168,17 +166,15 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
       return `Location #${locationId}`;
     }
 
-    // Nur Name, falls keine Stadt gesetzt ist
     if (!loc.city) {
       return loc.name;
     }
 
-    // "Stadthalle Konstanz (Konstanz)"
     return `${loc.name} (${loc.city})`;
   }
 
   // ----------------------------------------------------
-  // EVENT ERSTELLEN (nur Manager)
+  // CREATE EVENTS
   // ----------------------------------------------------
   createEvent(): void {
     if (this.userRole !== 'eventmanager') {
@@ -230,7 +226,7 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
   }
 
   // ----------------------------------------------------
-  // TICKETS AUSWÄHLEN / WARENKORB
+  // SELECTING TICKETS
   // ----------------------------------------------------
   changeCount(eventId: number, value: string): void {
     const n = parseInt(value, 10);
@@ -269,14 +265,13 @@ export class EventOverviewComponent implements OnInit, OnDestroy {
       });
     }
 
-    // Auswahl zurücksetzen
     this.selectedTicketCounts = {};
     alert('Tickets zum Warenkorb hinzugefügt.');
     this.router.navigate(['/ticket-buy']);
   }
 
   // ----------------------------------------------------
-  // EVENT LÖSCHEN (nur Manager)
+  // DELETING EVENTS
   // ----------------------------------------------------
   deleteEvent(id: number): void {
     if (this.userRole !== 'eventmanager') {

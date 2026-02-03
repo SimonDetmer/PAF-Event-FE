@@ -24,9 +24,6 @@ export class OrderService {
 
   constructor() {}
 
-  // ----------------------------------------------------
-  // INTERNER ZUGRIFF AUF ITEMS
-  // ----------------------------------------------------
   private get items(): CartItem[] {
     return this.itemsSubject.value;
   }
@@ -35,9 +32,6 @@ export class OrderService {
     this.itemsSubject.next(value);
   }
 
-  // ----------------------------------------------------
-  // LOADING-STATUS (für Spinner)
-  // ----------------------------------------------------
   setLoading(isLoading: boolean): void {
     this.loadingSubject.next(isLoading);
   }
@@ -97,7 +91,6 @@ export class OrderService {
     );
   }
 
-  // 👇 Wird im Header für das Badge genutzt
   getTotalCount(): number {
     return this.items.reduce(
       (sum, item) => sum + item.quantity,

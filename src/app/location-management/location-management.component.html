@@ -8,7 +8,6 @@
 
   <mat-card-content>
 
-    <!-- Meldungen -->
     <div *ngIf="errorMessage" class="mb-4 text-red-600">
       {{ errorMessage }}
     </div>
@@ -17,7 +16,6 @@
       {{ successMessage }}
     </div>
 
-    <!-- Neue Location anlegen -->
     <section class="mb-8">
       <h3 class="text-lg font-semibold mb-2">Neue Location anlegen</h3>
 
@@ -33,7 +31,6 @@
           />
         </mat-form-field>
 
-        <!-- Ort -->
         <mat-form-field appearance="outline" class="w-full md:col-span-1">
           <mat-label>Ort</mat-label>
           <input
@@ -44,7 +41,6 @@
           />
         </mat-form-field>
 
-        <!-- Kapazität -->
         <mat-form-field appearance="outline" class="w-full md:col-span-1">
           <mat-label>Kapazität</mat-label>
           <input
@@ -70,7 +66,6 @@
       </div>
     </section>
 
-    <!-- Location-Liste -->
     <section>
       <h3 class="text-lg font-semibold mb-2">Vorhandene Locations</h3>
 
@@ -88,13 +83,11 @@
         [dataSource]="locations"
         class="w-full mat-elevation-z1"
       >
-        <!-- ID -->
         <ng-container matColumnDef="id">
           <th mat-header-cell *matHeaderCellDef>ID</th>
           <td mat-cell *matCellDef="let loc">{{ loc.id }}</td>
         </ng-container>
 
-        <!-- Name -->
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef>Name</th>
           <td mat-cell *matCellDef="let loc">
@@ -102,7 +95,6 @@
           </td>
         </ng-container>
 
-        <!-- Ort -->
         <ng-container matColumnDef="city">
           <th mat-header-cell *matHeaderCellDef>Ort</th>
           <td mat-cell *matCellDef="let loc">
@@ -110,7 +102,6 @@
           </td>
         </ng-container>
 
-        <!-- Kapazität -->
         <ng-container matColumnDef="capacity">
           <th mat-header-cell *matHeaderCellDef>Kapazität</th>
           <td mat-cell *matCellDef="let loc">
@@ -118,7 +109,6 @@
           </td>
         </ng-container>
 
-        <!-- Aktionen -->
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let loc" class="text-right">

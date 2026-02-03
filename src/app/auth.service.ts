@@ -14,23 +14,16 @@ export class AuthService {
 
   private api = 'http://localhost:8080';
 
-  // aktueller User-Status
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   currentUser$ = this.currentUserSubject.asObservable();
 
   constructor() {
     const jwt = this.getJwt();
     if (jwt) {
-      // Beim Reload Profil nachladen
       this.loadUserProfile();
     }
   }
 
-  /**
-   * Einfacher Login nur mit E-Mail:
-   * POST /auth/login-simple?email=...
-   * Antwort: { jwt, user }
-   */
   loginSimple(email: string) {
     return this.http.post<{ jwt: string; user: User }>(
       `${this.api}/auth/login-simple?email=${encodeURIComponent(email)}`,
@@ -47,13 +40,11 @@ export class AuthService {
     );
   }
 
-  /**
-   * Profil laden (für F5 / Seite neu laden)
-   */
+
   loadUserProfile() {
     const jwt = this.getJwt();
 
-    // Falls es (inzwischen) gar kein JWT mehr gibt, nichts tun
+
     if (!jwt) {
       this.currentUserSubject.next(null);
       return;
@@ -61,13 +52,11 @@ export class AuthService {
 
     this.http.get<User>(`${this.api}/api/users/me`).subscribe({
       next: user => {
-        // Nur dann den User setzen, wenn es noch ein JWT gibt.
-        // Wenn in der Zwischenzeit logout() aufgerufen wurde, ist jwt weg.
         if (this.getJwt()) {
           this.currentUserSubject.next(user);
         }
       },
-      error: () => this.logout() // JWT ungültig -> rauswerfen
+      error: () => this.logout()
     });
   }
 
@@ -83,15 +72,11 @@ export class AuthService {
 
   logout() {
     localStorage.removeItem('jwt');
-    // UI-Zustand zurücksetzen
     this.currentUserSubject.next(null);
     this.router.navigate(['/user-login']);
   }
 
-  // 🔴 WICHTIG: Für das UI nur noch auf currentUser hören
   isAuthenticated(): boolean {
-    // Für die Anzeige von Toolbar/Sidebar reicht:
-    // currentUser != null
     return this.currentUserSubject.value !== null;
   }
 

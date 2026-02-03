@@ -47,10 +47,8 @@ export class LocationManagementComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
 
-  // Spalten basierend auf neuem Location-Entity
   displayedColumns: string[] = ['id', 'name', 'city', 'capacity', 'actions'];
 
-  // Neues Location-Formular
   newLocation = {
     name: '',
     city: '',
@@ -78,7 +76,6 @@ export class LocationManagementComponent implements OnInit {
         return;
       }
 
-      // Nur Manager sollen hier arbeiten
       if (user.role !== 'eventmanager') {
         this.errorMessage = 'Keine Berechtigung: Nur Eventmanager können Locations verwalten.';
         this.cdr.markForCheck();
@@ -91,7 +88,7 @@ export class LocationManagementComponent implements OnInit {
   }
 
   // ----------------------------------------------------
-  // LOCATIONS LADEN
+  // LOAD LOCATIONS
   // ----------------------------------------------------
   loadLocations(): void {
     this.loading = true;
@@ -114,7 +111,7 @@ export class LocationManagementComponent implements OnInit {
   }
 
   // ----------------------------------------------------
-  // LOCATION ANLEGEN
+  // CREATE LOCATION
   // ----------------------------------------------------
   createLocation(): void {
     this.errorMessage = '';
@@ -158,7 +155,7 @@ export class LocationManagementComponent implements OnInit {
   }
 
   // ----------------------------------------------------
-  // LOCATION LÖSCHEN
+  // DELETE LOCATION
   // ----------------------------------------------------
   deleteLocation(loc: any): void {
     if (!confirm(`Location "${loc.name || loc.id}" wirklich löschen?`)) {

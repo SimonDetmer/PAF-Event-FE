@@ -26,7 +26,6 @@ export class LoginComponent implements OnInit {
 
     this.auth.loginSimple(this.email).subscribe({
       next: () => {
-        // Weiterleitung passiert bereits im Service
       },
       error: () => {
         this.message = 'Login fehlgeschlagen.';

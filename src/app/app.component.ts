@@ -65,7 +65,6 @@ export class AppComponent implements OnInit, OnDestroy {
     // Initial user state
     this.currentUser = this.auth.getCurrentUser();
 
-    // Wenn bereits ein Token existiert, Profil nachladen
     if (this.auth.isAuthenticated()) {
       this.auth.loadUserProfile();
     }
@@ -80,7 +79,6 @@ export class AppComponent implements OnInit, OnDestroy {
         const isLoginRoute = url.startsWith('/user-login');
         const isCreateUserRoute = url.startsWith('/create-user');
 
-        // Nur redirecten, wenn wir NICHT auf Login oder Registrierung sind
         if (!isLoginRoute && !isCreateUserRoute) {
           this.router.navigate(['/user-login']);
         }

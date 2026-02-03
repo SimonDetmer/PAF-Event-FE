@@ -47,7 +47,6 @@ export class ReportComponent implements OnInit, AfterViewInit {
 
   private heatmapInitialized = false;
 
-  // Live-Daten
   private events: any[] = [];
   private tickets: any[] = [];
   private locations: any[] = [];
@@ -58,7 +57,6 @@ export class ReportComponent implements OnInit, AfterViewInit {
   ) {}
 
   ngOnInit() {
-    // Live laden statt Dummy chartData
     this.loadLiveReportData();
   }
 

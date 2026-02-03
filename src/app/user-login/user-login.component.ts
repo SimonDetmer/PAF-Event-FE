@@ -27,9 +27,6 @@ export class UserLoginComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // WICHTIG: hier ist dein „Startscreen“.
-    // Sobald der User auf /user-login landet, machen wir hart Logout,
-    // damit Sidebar & „eingeloggt als“ verschwinden.
     this.auth.logout();
   }
 
@@ -47,7 +44,6 @@ export class UserLoginComponent implements OnInit {
     this.auth.loginSimple(this.email).subscribe({
       next: () => {
         this.loading = false;
-        // Weiterleitung macht bereits der AuthService (router.navigate(['/dashboard']))
         this.message = 'Erfolgreich angemeldet.';
       },
       error: (err) => {
@@ -64,7 +60,6 @@ export class UserLoginComponent implements OnInit {
   }
 
   goToRegister() {
-    // WICHTIG: Kein window.location – sondern Angular-Router nutzen
     this.router.navigate(['/create-user']);
   }
 }

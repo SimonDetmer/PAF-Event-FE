@@ -1,4 +1,4 @@
-<!-- Eventmanager-Ansicht -->
+<!-- Eventmanager-View -->
 <div *ngIf="user?.role === 'eventmanager'; else customerView">
   <h2 class="text-2xl font-semibold">Dashboard - Eventmanager</h2>
 
@@ -17,7 +17,7 @@
             <div echarts [options]="revenueDistributionChart" class="chart-container"></div>
           </div>
         </div>
-        
+
         <div class="bg-white p-4 rounded-lg shadow mb-8">
           <h4 class="text-lg font-medium mb-2">Verkäufe im Zeitverlauf</h4>
           <div echarts [options]="salesOverTimeChart" class="chart-container" style="height: 400px;"></div>
@@ -84,7 +84,7 @@
   </mat-tab-group>
 </div>
 
-<!-- Customer-Ansicht -->
+<!-- Customer-View -->
 <ng-template #customerView>
   <div class="p-4">
     <div class="mb-6">
@@ -92,7 +92,7 @@
       <p class="text-gray-600">Willkommen zurück, {{ user?.email }}!</p>
     </div>
 
-    <!-- Fehlermeldung -->
+    <!-- Error Message -->
     <div *ngIf="errorMessage" class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
       {{ errorMessage }}
     </div>
@@ -186,11 +186,11 @@
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="displayedColumnsCustomer" class="bg-gray-50"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumnsCustomer;" 
+          <tr mat-row *matRowDef="let row; columns: displayedColumnsCustomer;"
               class="hover:bg-gray-50 border-t border-gray-200"></tr>
         </table>
       </div>
-      
+
       <div class="px-6 py-4 bg-gray-50 text-right border-t border-gray-200">
         <span class="text-sm text-gray-700 mr-4">Gesamtausgaben:</span>
         <span class="text-lg font-semibold text-gray-900">{{ getCustomerOverallTotal() | number:'1.2-2' }} €</span>

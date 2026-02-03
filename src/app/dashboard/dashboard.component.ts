@@ -161,8 +161,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getSoldTicketsForEvent(event: any): any[] {
-    // TicketDto liefert: id, price, eventId, orderId, createdAt
-    // Wir filtern die global geladene Ticketliste nach verkauften Tickets des Events.
     return this.tickets.filter(
       (ticket: any) =>
         ticket.orderId != null &&
@@ -197,7 +195,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Bestellungen für den eingeloggten User laden
     this.http.get<any[]>(`${this.apiBase}/orders`).subscribe({
       next: (orders) => {
         const userId = this.user!.id;
@@ -229,7 +226,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
           eventMap[ev.id] = ev;
         });
 
-        // Tickets der Bestellungen mit Event-Objekten anreichern
         this.customerOrders.forEach(order => {
           order.tickets?.forEach((ticket: any) => {
             if (!ticket.event) {

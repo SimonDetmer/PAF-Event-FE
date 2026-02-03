@@ -12,31 +12,22 @@ import { LocationManagementComponent } from './location-management/location-mana
 import { authGuard } from './auth.guard';
 
 export const routes: Routes = [
-  // Startseite → neuer Login
   { path: '', redirectTo: 'user-login', pathMatch: 'full' },
 
-  // Neuer einfacher Login (Email)
   { path: 'user-login', component: UserLoginComponent },
 
-  // Alte Login-Variante (falls noch genutzt)
   { path: 'login', component: LoginComponent },
 
-  // Dashboard (nur eingeloggt)
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
 
-  // Event-Übersicht (nur eingeloggt)
   { path: 'event-overview', component: EventOverviewComponent, canActivate: [authGuard] },
 
-  // Ticket-Kauf (nur eingeloggt)
   { path: 'ticket-buy', component: TicketBuyComponent, canActivate: [authGuard] },
 
-  // Location-Verwaltung (nur eingeloggt – Rolle wird in der Komponente geprüft)
   { path: 'locations', component: LocationManagementComponent, canActivate: [authGuard] },
 
-  // Benutzer erstellen (Registrierung)
   { path: 'create-user', component: CreateUserComponent },
 
-  // Catch-All
   { path: '**', component: NotFoundComponent }
 ];
 

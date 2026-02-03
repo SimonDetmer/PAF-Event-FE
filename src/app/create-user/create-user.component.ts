@@ -74,10 +74,9 @@ export class CreateUserComponent {
         console.log('Registrierung erfolgreich:', response);
         this.message = 'Benutzer wurde erfolgreich angelegt. Sie werden jetzt angemeldet...';
 
-        // 🔐 Direkt nach der Registrierung einloggen
+        // Login after registration
         this.auth.loginSimple(this.email).subscribe({
           next: () => {
-            // loginSimple macht bereits navigate(['/dashboard'])
             this.loading = false;
           },
           error: (err) => {

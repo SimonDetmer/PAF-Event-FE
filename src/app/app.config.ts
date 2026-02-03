@@ -11,12 +11,10 @@ export const appConfig: ApplicationConfig = {
     // Routing
     provideRouter(routes),
 
-    // HttpClient + funktionaler Interceptor
     provideHttpClient(
       withInterceptors([authInterceptor])
     ),
 
-    // ECharts
     importProvidersFrom(NgxEchartsModule.forRoot({
       echarts: () => import('echarts')
     })),

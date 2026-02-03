@@ -19,7 +19,7 @@ export class EmailValidatorService implements AsyncValidator {
     }
 
     return of(email).pipe(
-      debounceTime(300), // 300ms warten, um unnötige Requests zu vermeiden
+      debounceTime(300),
       take(1),
       switchMap(emailValue =>
         this.http.get<boolean>(`${this.apiBase}/users/email/${emailValue}`).pipe(
